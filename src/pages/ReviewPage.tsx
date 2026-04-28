@@ -33,27 +33,25 @@ const ReviewPage = () => {
         if (d) setTitle(`测评回溯 · ${d.level} · ${d.accuracy}%`);
       } else if (kind === "pk" && user) {
         // Fetch my answers + (optionally) opponent's, in parallel
-        const queries: Promise<any>[] = [
-          supabase
-            .from("pk_match_answers")
-            .select("*")
-            .eq("match_id", id)
-            .eq("user_id", user.id)
-            .order("question_index"),
-        ];
-        if (opponentId) {
-          queries.push(
-            supabase
+        const myPromise = supabase
+          .from("pk_match_answers")
+          .select("*")
+          .eq("match_id", id)
+          .eq("user_id", user.id)
+          .order("question_index")
+          .then((r) => r);
+        const oppPromise = opponentId
+          ? supabase
               .from("pk_match_answers")
               .select("*")
               .eq("match_id", id)
               .eq("user_id", opponentId)
-              .order("question_index"),
-          );
-        }
-        const results = await Promise.all(queries);
-        const my = (results[0]?.data ?? []) as any[];
-        const opp = (results[1]?.data ?? []) as any[];
+              .order("question_index")
+              .then((r) => r)
+          : Promise.resolve({ data: [] as any[] });
+        const [myRes, oppRes] = await Promise.all([myPromise, oppPromise]);
+        const my = (myRes?.data ?? []) as any[];
+        const opp = (oppRes?.data ?? []) as any[];
         setPkMy(
           my.map((a) => ({
             wordId: a.word_id ?? "",
