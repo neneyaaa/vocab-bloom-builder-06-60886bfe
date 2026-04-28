@@ -15,6 +15,10 @@ import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import MyStats from "./pages/MyStats";
 import NotFound from "./pages/NotFound";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import WordsAdmin from "./pages/admin/WordsAdmin";
+import UsersAdmin from "./pages/admin/UsersAdmin";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +40,10 @@ const App = () => (
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/my-stats" element={<MyStats />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/words" element={<WordsAdmin />} />
+            <Route path="/admin/users" element={<UsersAdmin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

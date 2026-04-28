@@ -26,6 +26,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
+    // Check ban status — sign out banned users
+    const { data: ban } = await supabase
+      .from("user_bans")
+      .select("user_id, reason")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (ban) {
+      await supabase.auth.signOut();
+      setProfile(null);
+      if (typeof window !== "undefined") {
+        const { toast } = await import("sonner");
+        toast.error(`账号已被封禁${ban.reason ? `：${ban.reason}` : ""}`);
+      }
+      return;
+    }
     const { data } = await supabase
       .from("profiles")
       .select("id, username, avatar_url")
