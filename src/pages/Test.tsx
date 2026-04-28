@@ -19,7 +19,7 @@ const Test = () => {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    setQuestions(getRandomQuestions(TOTAL_QUESTIONS));
+    getRandomQuestions(TOTAL_QUESTIONS).then(setQuestions);
   }, []);
 
   useEffect(() => {
