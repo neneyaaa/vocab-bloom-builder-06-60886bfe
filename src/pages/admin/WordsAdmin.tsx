@@ -16,9 +16,27 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Sparkles, Search, Loader2, Download, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Search, Loader2, Download, Upload, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { clearWordsCache } from "@/data/wordBank";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
+type ImportRow = {
+  word: string;
+  meaning: string;
+  options: string[];
+  difficulty: "easy" | "medium" | "hard";
+  category: string | null;
+  enabled: boolean;
+};
+
+interface ImportPreview {
+  validNew: ImportRow[];
+  duplicates: { row: ImportRow; existingId: string; existing: WordRow }[];
+  invalid: { index: number; raw: any; reason: string }[];
+  fileDuplicates: { word: string; count: number }[];
+}
 
 interface WordRow {
   id: string;
