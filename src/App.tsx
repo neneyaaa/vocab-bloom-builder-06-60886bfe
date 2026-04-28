@@ -20,6 +20,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import WordsAdmin from "./pages/admin/WordsAdmin";
 import UsersAdmin from "./pages/admin/UsersAdmin";
 import Partners from "./pages/Partners";
+import BusinessDashboard from "./pages/business/BusinessDashboard";
+import InquiriesList from "./pages/business/InquiriesList";
+import InquiryDetail from "./pages/business/InquiryDetail";
 import AIAssistant from "./components/AIAssistant";
 
 const queryClient = new QueryClient();
