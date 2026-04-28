@@ -109,6 +109,8 @@ const Home = () => {
       <footer className="text-center py-6 text-sm text-muted-foreground">
         词界 WordScope · 词汇量测评工具
         {" · "}
+        <a href="/partners" className="opacity-60 hover:opacity-100 hover:text-primary transition-opacity">商务合作</a>
+        {" · "}
         <a href="/admin/login" className="opacity-40 hover:opacity-100 hover:text-primary transition-opacity">管理员</a>
       </footer>
     </div>
