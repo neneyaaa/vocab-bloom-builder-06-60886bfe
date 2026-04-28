@@ -62,12 +62,17 @@ const Test = () => {
     }, 600);
   };
 
-  const advance = (newAnswers: AnswerRecord[]) => {
+  const advance = async (newAnswers: AnswerRecord[]) => {
     if (currentIndex + 1 >= questions.length) {
       const duration = Math.floor((Date.now() - startTime.current) / 1000);
       const result = calculateResult(newAnswers, duration);
       saveResult(result);
-      navigate(`/result/${result.id}`, { state: { result } });
+      let cloudId: string | null = null;
+      if (user) {
+        cloudId = await saveResultToCloud(user.id, result);
+      }
+      // Prefer cloud id in the URL so the result is shareable / refresh-safe
+      navigate(`/result/${cloudId ?? result.id}`, { state: { result, cloudId } });
     } else {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
