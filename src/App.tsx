@@ -20,6 +20,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import WordsAdmin from "./pages/admin/WordsAdmin";
 import UsersAdmin from "./pages/admin/UsersAdmin";
 import Partners from "./pages/Partners";
+import BusinessDashboard from "./pages/business/BusinessDashboard";
+import InquiriesList from "./pages/business/InquiriesList";
+import InquiryDetail from "./pages/business/InquiryDetail";
 import AIAssistant from "./components/AIAssistant";
 
 const queryClient = new QueryClient();
@@ -47,6 +50,9 @@ const App = () => (
             <Route path="/admin/words" element={<WordsAdmin />} />
             <Route path="/admin/users" element={<UsersAdmin />} />
             <Route path="/partners" element={<Partners />} />
+            <Route path="/business" element={<BusinessDashboard />} />
+            <Route path="/business/inquiries" element={<InquiriesList />} />
+            <Route path="/business/inquiries/:id" element={<InquiryDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AIAssistant />

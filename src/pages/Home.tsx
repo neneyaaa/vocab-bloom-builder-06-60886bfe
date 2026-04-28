@@ -111,6 +111,8 @@ const Home = () => {
         {" · "}
         <a href="/partners" className="opacity-60 hover:opacity-100 hover:text-primary transition-opacity">商务合作</a>
         {" · "}
+        <a href="/business" className="opacity-40 hover:opacity-100 hover:text-primary transition-opacity">商务后台</a>
+        {" · "}
         <a href="/admin/login" className="opacity-40 hover:opacity-100 hover:text-primary transition-opacity">管理员</a>
       </footer>
     </div>

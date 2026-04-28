@@ -14,6 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
+      inquiry_followups: {
+        Row: {
+          author_id: string
+          channel: string
+          content: string
+          created_at: string
+          id: string
+          inquiry_id: string
+        }
+        Insert: {
+          author_id: string
+          channel?: string
+          content: string
+          created_at?: string
+          id?: string
+          inquiry_id: string
+        }
+        Update: {
+          author_id?: string
+          channel?: string
+          content?: string
+          created_at?: string
+          id?: string
+          inquiry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_followups_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "partner_inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inquiry_reads: {
+        Row: {
+          inquiry_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          inquiry_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          inquiry_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiry_reads_inquiry_id_fkey"
+            columns: ["inquiry_id"]
+            isOneToOne: false
+            referencedRelation: "partner_inquiries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_results: {
         Row: {
           created_at: string
@@ -49,40 +110,55 @@ export type Database = {
       }
       partner_inquiries: {
         Row: {
+          assigned_to: string | null
           budget_range: string | null
           company_name: string
           contact_name: string
           created_at: string
+          deal_value: number | null
           email: string
           id: string
           inquiry_type: string
           message: string
+          next_followup_at: string | null
           phone: string | null
+          priority: string
           status: string
+          updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           budget_range?: string | null
           company_name: string
           contact_name: string
           created_at?: string
+          deal_value?: number | null
           email: string
           id?: string
           inquiry_type: string
           message: string
+          next_followup_at?: string | null
           phone?: string | null
+          priority?: string
           status?: string
+          updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           budget_range?: string | null
           company_name?: string
           contact_name?: string
           created_at?: string
+          deal_value?: number | null
           email?: string
           id?: string
           inquiry_type?: string
           message?: string
+          next_followup_at?: string | null
           phone?: string | null
+          priority?: string
           status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -204,10 +280,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_business_staff: { Args: { _user_id: string }; Returns: boolean }
       is_user_banned: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "business_dev"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -335,7 +412,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "business_dev"],
     },
   },
 } as const

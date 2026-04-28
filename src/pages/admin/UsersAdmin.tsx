@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/UserAvatar";
-import { ShieldOff, ShieldCheck, Pencil, Search, Loader2, Crown } from "lucide-react";
+import { ShieldOff, ShieldCheck, Pencil, Search, Loader2, Crown, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -91,6 +91,8 @@ const UsersAdmin = () => {
 
   const grantAdmin = (u: AdminUser) => callApi({ action: "grant_admin", user_id: u.id }, "已授予管理员");
   const revokeAdmin = (u: AdminUser) => callApi({ action: "revoke_admin", user_id: u.id }, "已撤销管理员");
+  const grantBiz = (u: AdminUser) => callApi({ action: "grant_business_dev", user_id: u.id }, "已授予商务");
+  const revokeBiz = (u: AdminUser) => callApi({ action: "revoke_business_dev", user_id: u.id }, "已撤销商务");
 
   return (
     <AdminLayout>
@@ -127,6 +129,7 @@ const UsersAdmin = () => {
               <tbody>
                 {filtered.map((u) => {
                   const isAdmin = u.roles.includes("admin");
+                  const isBiz = u.roles.includes("business_dev");
                   const isMe = u.id === me?.id;
                   return (
                     <tr key={u.id} className="border-t border-slate-800 hover:bg-slate-800/30">
@@ -145,8 +148,9 @@ const UsersAdmin = () => {
                       <td className="px-4 py-2.5">
                         <div className="flex gap-1 flex-wrap">
                           {isAdmin && <Badge className="bg-amber-500/20 text-amber-300"><Crown className="w-3 h-3 mr-1" />管理员</Badge>}
+                          {isBiz && <Badge className="bg-sky-500/20 text-sky-300"><Briefcase className="w-3 h-3 mr-1" />商务</Badge>}
                           {u.banned && <Badge className="bg-rose-500/20 text-rose-300">已封禁</Badge>}
-                          {!isAdmin && !u.banned && <span className="text-xs text-slate-500">普通用户</span>}
+                          {!isAdmin && !isBiz && !u.banned && <span className="text-xs text-slate-500">普通用户</span>}
                         </div>
                       </td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
@@ -157,6 +161,9 @@ const UsersAdmin = () => {
                         {isAdmin
                           ? !isMe && <Button size="sm" variant="ghost" className="text-amber-400" onClick={() => revokeAdmin(u)} title="撤销管理员">取消Admin</Button>
                           : <Button size="sm" variant="ghost" className="text-amber-400" onClick={() => grantAdmin(u)} title="授予管理员">设为Admin</Button>}
+                        {isBiz
+                          ? <Button size="sm" variant="ghost" className="text-sky-400" onClick={() => revokeBiz(u)} title="撤销商务">取消商务</Button>
+                          : <Button size="sm" variant="ghost" className="text-sky-400" onClick={() => grantBiz(u)} title="授予商务">设为商务</Button>}
                         {u.banned ? (
                           <Button size="sm" variant="ghost" className="text-emerald-400" onClick={() => unban(u)}>
                             <ShieldCheck className="w-4 h-4" />
