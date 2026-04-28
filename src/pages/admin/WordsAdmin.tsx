@@ -179,31 +179,169 @@ const WordsAdmin = () => {
     URL.revokeObjectURL(url);
   };
 
+  const validateRow = (raw: any): { ok: true; row: ImportRow } | { ok: false; reason: string } => {
+    if (!raw || typeof raw !== "object") return { ok: false, reason: "不是对象" };
+    const word = typeof raw.word === "string" ? raw.word.trim() : "";
+    const meaning = typeof raw.meaning === "string" ? raw.meaning.trim() : "";
+    if (!word) return { ok: false, reason: "缺少 word" };
+    if (!meaning) return { ok: false, reason: "缺少 meaning" };
+    if (!Array.isArray(raw.options)) return { ok: false, reason: "options 不是数组" };
+    const options = raw.options.map((o: any) => (typeof o === "string" ? o.trim() : ""));
+    if (options.length !== 4) return { ok: false, reason: "options 必须为 4 项" };
+    if (options.some((o: string) => !o)) return { ok: false, reason: "存在空选项" };
+    if (new Set(options).size !== 4) return { ok: false, reason: "选项重复" };
+    if (!options.includes(meaning)) return { ok: false, reason: "选项中不含正确释义" };
+    const difficulty = ["easy", "medium", "hard"].includes(raw.difficulty) ? raw.difficulty : "medium";
+    const category = raw.category == null ? null : String(raw.category).trim() || null;
+    const enabled = raw.enabled !== false;
+    return { ok: true, row: { word, meaning, options, difficulty, category, enabled } };
+  };
+
   const importJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return;
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
     try {
       const text = await file.text();
-      const arr = JSON.parse(text);
-      if (!Array.isArray(arr)) throw new Error("格式错误");
-      const rows = arr
-        .filter((w) => w?.word && w?.meaning && Array.isArray(w?.options) && w.options.length === 4)
-        .map((w) => ({
-          word: String(w.word).trim(),
-          meaning: String(w.meaning).trim(),
-          options: w.options.map((o: any) => String(o).trim()),
-          difficulty: ["easy","medium","hard"].includes(w.difficulty) ? w.difficulty : "medium",
-          category: w.category ?? null,
-          enabled: w.enabled !== false,
-        }));
-      if (rows.length === 0) return toast.error("无有效数据");
-      const { error } = await supabase.from("words").insert(rows);
-      if (error) throw error;
-      toast.success(`已导入 ${rows.length} 个词`);
-      load();
+      let arr: any;
+      try {
+        arr = JSON.parse(text);
+      } catch {
+        return toast.error("JSON 解析失败：文件不是有效的 JSON");
+      }
+      if (!Array.isArray(arr)) return toast.error("格式错误：根节点必须是数组");
+      if (arr.length === 0) return toast.error("文件为空");
+
+      const invalid: ImportPreview["invalid"] = [];
+      const validRows: ImportRow[] = [];
+      arr.forEach((raw, i) => {
+        const r = validateRow(raw);
+        if (r.ok) validRows.push(r.row);
+        else invalid.push({ index: i, raw, reason: r.reason });
+      });
+
+      // Detect duplicates within file (by lowercased word)
+      const seen = new Map<string, number>();
+      validRows.forEach((r) => {
+        const k = r.word.toLowerCase();
+        seen.set(k, (seen.get(k) ?? 0) + 1);
+      });
+      const fileDuplicates = [...seen.entries()]
+        .filter(([, c]) => c > 1)
+        .map(([word, count]) => ({ word, count }));
+
+      // Keep only the LAST occurrence of each duplicated word in file
+      const dedupedByWord = new Map<string, ImportRow>();
+      validRows.forEach((r) => dedupedByWord.set(r.word.toLowerCase(), r));
+      const dedupedRows = [...dedupedByWord.values()];
+
+      // Detect duplicates against DB by word (case-insensitive)
+      const wordsLower = dedupedRows.map((r) => r.word.toLowerCase());
+      const { data: existing, error: exErr } = await supabase
+        .from("words")
+        .select("*")
+        .in("word", dedupedRows.map((r) => r.word));
+      if (exErr) throw exErr;
+      const existingMap = new Map<string, WordRow>();
+      (existing ?? []).forEach((w: any) => existingMap.set(w.word.toLowerCase(), w as WordRow));
+
+      const duplicates: ImportPreview["duplicates"] = [];
+      const validNew: ImportRow[] = [];
+      dedupedRows.forEach((row) => {
+        const ex = existingMap.get(row.word.toLowerCase());
+        if (ex) duplicates.push({ row, existingId: ex.id, existing: ex });
+        else validNew.push(row);
+      });
+
+      setImportDupStrategy("skip");
+      setImportPreview({ validNew, duplicates, invalid, fileDuplicates });
     } catch (err: any) {
       toast.error(err.message ?? "导入失败");
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!importPreview) return;
+    const { validNew, duplicates, invalid } = importPreview;
+
+    if (invalid.length > 0) {
+      toast.error("存在无效行，请先在文件中修复后重新导入（不会进行部分写入）");
+      return;
+    }
+
+    const toUpdate = importDupStrategy === "overwrite" ? duplicates : [];
+    const toInsert = validNew;
+
+    if (toUpdate.length === 0 && toInsert.length === 0) {
+      toast.message("没有需要写入的数据");
+      setImportPreview(null);
+      return;
+    }
+
+    setImporting(true);
+    // Snapshot existing rows for rollback on failure
+    const snapshots = toUpdate.map((d) => d.existing);
+    const updatedIds: string[] = [];
+    let insertedIds: string[] = [];
+
+    try {
+      // Apply updates first
+      for (const d of toUpdate) {
+        const { error } = await supabase
+          .from("words")
+          .update({
+            word: d.row.word,
+            meaning: d.row.meaning,
+            options: d.row.options,
+            difficulty: d.row.difficulty,
+            category: d.row.category,
+            enabled: d.row.enabled,
+          })
+          .eq("id", d.existingId);
+        if (error) throw new Error(`更新 "${d.row.word}" 失败: ${error.message}`);
+        updatedIds.push(d.existingId);
+      }
+
+      // Single atomic insert (Supabase: all-or-nothing per request)
+      if (toInsert.length > 0) {
+        const { data: ins, error: insErr } = await supabase
+          .from("words")
+          .insert(toInsert)
+          .select("id");
+        if (insErr) throw insErr;
+        insertedIds = (ins ?? []).map((r: any) => r.id);
+      }
+
+      toast.success(
+        `导入完成：新增 ${toInsert.length} · ${importDupStrategy === "overwrite" ? `覆盖 ${toUpdate.length}` : `跳过重复 ${duplicates.length}`}`
+      );
+      setImportPreview(null);
+      load();
+    } catch (err: any) {
+      // Rollback: revert updated rows from snapshot, delete inserted rows
+      try {
+        for (const snap of snapshots.filter((s) => updatedIds.includes(s.id))) {
+          await supabase
+            .from("words")
+            .update({
+              word: snap.word,
+              meaning: snap.meaning,
+              options: snap.options,
+              difficulty: snap.difficulty,
+              category: snap.category,
+              enabled: snap.enabled,
+            })
+            .eq("id", snap.id);
+        }
+        if (insertedIds.length > 0) {
+          await supabase.from("words").delete().in("id", insertedIds);
+        }
+      } catch (rbErr) {
+        console.error("Rollback failed:", rbErr);
+      }
+      toast.error(`导入失败已回滚：${err.message ?? err}`);
     } finally {
-      e.target.value = "";
+      setImporting(false);
     }
   };
 
