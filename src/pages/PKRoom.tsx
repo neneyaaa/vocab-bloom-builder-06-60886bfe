@@ -242,25 +242,36 @@ const PKRoom = () => {
     }, 1800);
   };
 
-  // Save match result
+  // Save match result + per-question answers
   useEffect(() => {
     if (!finished || resultSaved || !user || !matchId) return;
     let result: "win" | "lose" | "draw" = "draw";
     if (myScore > oppScore) result = "win";
     else if (myScore < oppScore) result = "lose";
 
-    supabase.from("match_results").insert({
-      match_id: matchId,
-      user_id: user.id,
-      // Bot opponents are stored as null opponent_id (so they don't appear on real leaderboards as victims)
-      opponent_id: isBotMatch || !opponent?.id || opponent.id.startsWith("bot_") ? null : opponent.id,
-      score: myScore,
-      opponent_score: oppScore,
-      result,
-    }).then(({ error }) => {
+    (async () => {
+      const { error } = await supabase.from("match_results").insert({
+        match_id: matchId,
+        user_id: user.id,
+        opponent_id: isBotMatch || !opponent?.id || opponent.id.startsWith("bot_") ? null : opponent.id,
+        score: myScore,
+        opponent_score: oppScore,
+        result,
+      });
       if (error) console.error(error);
+
+      // Persist per-question detail for replay/review
+      if (myAnswersRef.current.length > 0) {
+        const rows = myAnswersRef.current.map((a) => ({
+          ...a,
+          match_id: matchId,
+          user_id: user.id,
+        }));
+        const { error: ansErr } = await supabase.from("pk_match_answers").insert(rows);
+        if (ansErr) console.error("pk_match_answers insert failed", ansErr);
+      }
       setResultSaved(true);
-    });
+    })();
   }, [finished, resultSaved, user, matchId, myScore, oppScore, opponent, isBotMatch]);
 
   if (loading || !user || !currentQ) return null;
