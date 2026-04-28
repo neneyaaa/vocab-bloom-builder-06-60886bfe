@@ -216,8 +216,11 @@ const WordsAdmin = () => {
       const validRows: ImportRow[] = [];
       arr.forEach((raw, i) => {
         const r = validateRow(raw);
-        if (r.ok === true) validRows.push(r.row);
-        else invalid.push({ index: i, raw, reason: r.reason });
+        if (r.ok) {
+          validRows.push(r.row);
+        } else {
+          invalid.push({ index: i, raw, reason: r.reason });
+        }
       });
 
       // Detect duplicates within file (by lowercased word)
