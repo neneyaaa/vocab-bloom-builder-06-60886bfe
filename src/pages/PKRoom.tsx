@@ -143,6 +143,7 @@ const PKRoom = () => {
   useEffect(() => {
     if (finished || revealed || !currentQ) return;
     setTimeLeft(TIME_PER_Q);
+    questionStartRef.current = Date.now();
 
     // Schedule bot's answer for this question
     if (isBotMatch && botRef.current) {
