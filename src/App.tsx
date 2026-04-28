@@ -12,6 +12,8 @@ import Auth from "./pages/Auth";
 import PKLobby from "./pages/PKLobby";
 import PKRoom from "./pages/PKRoom";
 import Leaderboard from "./pages/Leaderboard";
+import Profile from "./pages/Profile";
+import MyStats from "./pages/MyStats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/pk" element={<PKLobby />} />
             <Route path="/pk/:matchId" element={<PKRoom />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/my-stats" element={<MyStats />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
