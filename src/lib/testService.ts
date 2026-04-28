@@ -123,3 +123,120 @@ export function getHistory(): TestResult[] {
 export function clearHistory(): void {
   localStorage.removeItem(HISTORY_KEY);
 }
+
+// ===== Cloud-backed history (preferred when user is logged in) =====
+
+export interface CloudTestSummary {
+  id: string;
+  created_at: string;
+  total_questions: number;
+  correct_count: number;
+  wrong_count: number;
+  unknown_count: number;
+  accuracy: number;
+  level: string;
+  estimated_vocabulary: number;
+  duration_seconds: number;
+}
+
+export interface CloudTestDetail extends CloudTestSummary {
+  level_description: string | null;
+  suggestion: string | null;
+  answers: AnswerRecord[];
+}
+
+/**
+ * Persist a TestResult to Supabase. Best-effort: returns the cloud row id
+ * if successful, null otherwise (UI should still navigate using the local result).
+ */
+export async function saveResultToCloud(
+  userId: string,
+  result: TestResult,
+): Promise<string | null> {
+  try {
+    const { data: run, error: runErr } = await supabase
+      .from("test_runs")
+      .insert({
+        user_id: userId,
+        total_questions: result.totalQuestions,
+        correct_count: result.correctCount,
+        wrong_count: result.wrongCount,
+        unknown_count: result.unknownCount,
+        accuracy: result.accuracy,
+        level: result.level,
+        level_description: result.levelDescription,
+        suggestion: result.suggestion,
+        estimated_vocabulary: result.estimatedVocabulary,
+        duration_seconds: result.duration,
+      })
+      .select("id")
+      .single();
+    if (runErr || !run) return null;
+
+    const rows = result.answers.map((a, i) => ({
+      test_run_id: run.id,
+      user_id: userId,
+      question_index: i,
+      word_id: isUuid(a.wordId) ? a.wordId : null,
+      word: a.word,
+      correct_answer: a.correctAnswer,
+      user_answer: a.userAnswer,
+      is_correct: a.isCorrect,
+      difficulty: a.difficulty,
+    }));
+    if (rows.length > 0) {
+      await supabase.from("test_run_answers").insert(rows);
+    }
+    return run.id;
+  } catch (e) {
+    console.error("saveResultToCloud failed", e);
+    return null;
+  }
+}
+
+export async function getCloudHistory(userId: string): Promise<CloudTestSummary[]> {
+  const { data } = await supabase
+    .from("test_runs")
+    .select("id, created_at, total_questions, correct_count, wrong_count, unknown_count, accuracy, level, estimated_vocabulary, duration_seconds")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  return (data as CloudTestSummary[]) ?? [];
+}
+
+export async function getCloudRunDetail(runId: string): Promise<CloudTestDetail | null> {
+  const [{ data: run }, { data: answers }] = await Promise.all([
+    supabase
+      .from("test_runs")
+      .select("*")
+      .eq("id", runId)
+      .maybeSingle(),
+    supabase
+      .from("test_run_answers")
+      .select("*")
+      .eq("test_run_id", runId)
+      .order("question_index", { ascending: true }),
+  ]);
+  if (!run) return null;
+  return {
+    ...(run as any),
+    answers: (answers ?? []).map((a: any) => ({
+      wordId: a.word_id ?? "",
+      word: a.word,
+      correctAnswer: a.correct_answer,
+      userAnswer: a.user_answer,
+      isCorrect: a.is_correct,
+      difficulty: a.difficulty,
+    })),
+  };
+}
+
+export async function deleteCloudRun(runId: string): Promise<boolean> {
+  const { error } = await supabase.from("test_runs").delete().eq("id", runId);
+  return !error;
+}
+
+function isUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
