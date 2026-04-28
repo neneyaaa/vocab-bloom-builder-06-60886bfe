@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsBusinessStaff } from "./useIsBusinessStaff";
+import { useIsBusinessStaff } from "@/hooks/useIsBusinessStaff";
 
 /**
  * Counts the number of inquiries the current user has not yet "read"
