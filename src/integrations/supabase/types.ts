@@ -162,6 +162,51 @@ export type Database = {
         }
         Relationships: []
       }
+      pk_match_answers: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          difficulty: string
+          id: string
+          is_correct: boolean
+          match_id: string
+          question_index: number
+          time_taken_ms: number | null
+          user_answer: string | null
+          user_id: string
+          word: string
+          word_id: string | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          difficulty: string
+          id?: string
+          is_correct: boolean
+          match_id: string
+          question_index: number
+          time_taken_ms?: number | null
+          user_answer?: string | null
+          user_id: string
+          word: string
+          word_id?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          is_correct?: boolean
+          match_id?: string
+          question_index?: number
+          time_taken_ms?: number | null
+          user_answer?: string | null
+          user_id?: string
+          word?: string
+          word_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -183,6 +228,104 @@ export type Database = {
           id?: string
           updated_at?: string
           username?: string
+        }
+        Relationships: []
+      }
+      test_run_answers: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          difficulty: string
+          id: string
+          is_correct: boolean
+          question_index: number
+          test_run_id: string
+          user_answer: string | null
+          user_id: string
+          word: string
+          word_id: string | null
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          difficulty: string
+          id?: string
+          is_correct: boolean
+          question_index: number
+          test_run_id: string
+          user_answer?: string | null
+          user_id: string
+          word: string
+          word_id?: string | null
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          difficulty?: string
+          id?: string
+          is_correct?: boolean
+          question_index?: number
+          test_run_id?: string
+          user_answer?: string | null
+          user_id?: string
+          word?: string
+          word_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_run_answers_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_runs: {
+        Row: {
+          accuracy: number
+          correct_count: number
+          created_at: string
+          duration_seconds: number
+          estimated_vocabulary: number
+          id: string
+          level: string
+          level_description: string | null
+          suggestion: string | null
+          total_questions: number
+          unknown_count: number
+          user_id: string
+          wrong_count: number
+        }
+        Insert: {
+          accuracy: number
+          correct_count: number
+          created_at?: string
+          duration_seconds?: number
+          estimated_vocabulary?: number
+          id?: string
+          level: string
+          level_description?: string | null
+          suggestion?: string | null
+          total_questions: number
+          unknown_count: number
+          user_id: string
+          wrong_count: number
+        }
+        Update: {
+          accuracy?: number
+          correct_count?: number
+          created_at?: string
+          duration_seconds?: number
+          estimated_vocabulary?: number
+          id?: string
+          level?: string
+          level_description?: string | null
+          suggestion?: string | null
+          total_questions?: number
+          unknown_count?: number
+          user_id?: string
+          wrong_count?: number
         }
         Relationships: []
       }

@@ -53,6 +53,17 @@ const PKRoom = () => {
   const [finished, setFinished] = useState(false);
   const [resultSaved, setResultSaved] = useState(false);
   const [bubbles, setBubbles] = useState<ChatBubble[]>([]);
+  const myAnswersRef = useRef<Array<{
+    question_index: number;
+    word_id: string | null;
+    word: string;
+    correct_answer: string;
+    user_answer: string | null;
+    is_correct: boolean;
+    difficulty: string;
+    time_taken_ms: number;
+  }>>([]);
+  const questionStartRef = useRef<number>(Date.now());
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const botRef = useRef<BotProfile | null>(null);
@@ -132,6 +143,7 @@ const PKRoom = () => {
   useEffect(() => {
     if (finished || revealed || !currentQ) return;
     setTimeLeft(TIME_PER_Q);
+    questionStartRef.current = Date.now();
 
     // Schedule bot's answer for this question
     if (isBotMatch && botRef.current) {
@@ -192,8 +204,22 @@ const PKRoom = () => {
     if (revealed || !currentQ) return;
     setSelected(optionIdx);
     setRevealed(true);
+    const userAnswer = timeout || optionIdx < 0 ? null : currentQ.options[optionIdx];
     const correct = !timeout && currentQ.options[optionIdx] === currentQ.meaning;
     if (correct) setMyScore((s) => s + 1);
+
+    // Record this answer for cloud persistence at end of match
+    const wid = (currentQ as any).id as string | undefined;
+    myAnswersRef.current.push({
+      question_index: currentIdx,
+      word_id: wid && /^[0-9a-f-]{36}$/i.test(wid) ? wid : null,
+      word: currentQ.word,
+      correct_answer: currentQ.meaning,
+      user_answer: userAnswer,
+      is_correct: correct,
+      difficulty: currentQ.difficulty,
+      time_taken_ms: Date.now() - questionStartRef.current,
+    });
 
     if (!isBotMatch) {
       channelRef.current?.send({
@@ -216,25 +242,36 @@ const PKRoom = () => {
     }, 1800);
   };
 
-  // Save match result
+  // Save match result + per-question answers
   useEffect(() => {
     if (!finished || resultSaved || !user || !matchId) return;
     let result: "win" | "lose" | "draw" = "draw";
     if (myScore > oppScore) result = "win";
     else if (myScore < oppScore) result = "lose";
 
-    supabase.from("match_results").insert({
-      match_id: matchId,
-      user_id: user.id,
-      // Bot opponents are stored as null opponent_id (so they don't appear on real leaderboards as victims)
-      opponent_id: isBotMatch || !opponent?.id || opponent.id.startsWith("bot_") ? null : opponent.id,
-      score: myScore,
-      opponent_score: oppScore,
-      result,
-    }).then(({ error }) => {
+    (async () => {
+      const { error } = await supabase.from("match_results").insert({
+        match_id: matchId,
+        user_id: user.id,
+        opponent_id: isBotMatch || !opponent?.id || opponent.id.startsWith("bot_") ? null : opponent.id,
+        score: myScore,
+        opponent_score: oppScore,
+        result,
+      });
       if (error) console.error(error);
+
+      // Persist per-question detail for replay/review
+      if (myAnswersRef.current.length > 0) {
+        const rows = myAnswersRef.current.map((a) => ({
+          ...a,
+          match_id: matchId,
+          user_id: user.id,
+        }));
+        const { error: ansErr } = await supabase.from("pk_match_answers").insert(rows);
+        if (ansErr) console.error("pk_match_answers insert failed", ansErr);
+      }
       setResultSaved(true);
-    });
+    })();
   }, [finished, resultSaved, user, matchId, myScore, oppScore, opponent, isBotMatch]);
 
   if (loading || !user || !currentQ) return null;

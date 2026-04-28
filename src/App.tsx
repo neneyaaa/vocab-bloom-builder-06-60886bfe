@@ -23,6 +23,7 @@ import Partners from "./pages/Partners";
 import BusinessDashboard from "./pages/business/BusinessDashboard";
 import InquiriesList from "./pages/business/InquiriesList";
 import InquiryDetail from "./pages/business/InquiryDetail";
+import ReviewPage from "./pages/ReviewPage";
 import AIAssistant from "./components/AIAssistant";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/business" element={<BusinessDashboard />} />
             <Route path="/business/inquiries" element={<InquiriesList />} />
             <Route path="/business/inquiries/:id" element={<InquiryDetail />} />
+            <Route path="/review/:kind/:id" element={<ReviewPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AIAssistant />

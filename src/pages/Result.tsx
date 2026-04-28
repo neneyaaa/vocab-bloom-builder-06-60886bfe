@@ -1,5 +1,5 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, RotateCcw, Home, Trophy, Target, XCircle, HelpCircle, Clock, Lightbulb } from "lucide-react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { BookOpen, RotateCcw, Home, Trophy, Target, XCircle, HelpCircle, Clock, Lightbulb, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TestResult } from "@/lib/testService";
 
@@ -14,7 +14,10 @@ const levelColors: Record<string, string> = {
 const Result = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const result = (location.state as { result: TestResult })?.result;
+  const { id: routeId } = useParams<{ id: string }>();
+  const state = location.state as { result?: TestResult; cloudId?: string } | null;
+  const result = state?.result;
+  const cloudId = state?.cloudId ?? routeId;
 
   if (!result) {
     navigate("/");
@@ -80,6 +83,16 @@ const Result = () => {
             <RotateCcw className="h-4 w-4 mr-2" />
             再测一次
           </Button>
+          {cloudId && (
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/review/test/${cloudId}`)}
+              className="flex-1 py-5 rounded-xl"
+            >
+              <ListChecks className="h-4 w-4 mr-2" />
+              查看每题对错
+            </Button>
+          )}
           <Button variant="outline" onClick={() => navigate("/")} className="flex-1 py-5 rounded-xl">
             <Home className="h-4 w-4 mr-2" />
             返回首页
