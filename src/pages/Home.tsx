@@ -1,12 +1,20 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, History, Sparkles, Brain, Target, TrendingUp } from "lucide-react";
+import { BookOpen, History, Sparkles, Brain, Target, TrendingUp, Swords, Trophy, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getHistory } from "@/lib/testService";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Home = () => {
   const navigate = useNavigate();
   const history = getHistory();
   const lastTest = history[0];
+  const { user, profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("已退出登录");
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -17,15 +25,28 @@ const Home = () => {
           <span className="font-display text-xl font-bold text-foreground">词界</span>
           <span className="text-xs text-muted-foreground font-body ml-1">WordScope</span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/history")}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <History className="h-4 w-4 mr-1" />
-          历史记录
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/leaderboard")} className="text-muted-foreground hover:text-foreground">
+            <Trophy className="h-4 w-4 mr-1" />排行榜
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/history")} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex">
+            <History className="h-4 w-4 mr-1" />历史
+          </Button>
+          {user ? (
+            <>
+              <span className="hidden sm:inline text-sm text-muted-foreground px-2">
+                你好，<span className="text-foreground font-medium">{profile?.username ?? "..."}</span>
+              </span>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <Button variant="default" size="sm" onClick={() => navigate("/auth")}>
+              <LogIn className="h-4 w-4 mr-1" />登录
+            </Button>
+          )}
+        </div>
       </nav>
 
       {/* Hero */}
@@ -33,7 +54,7 @@ const Home = () => {
         <div className="text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-8">
             <Sparkles className="h-3.5 w-3.5" />
-            智能词汇量测评
+            智能词汇量测评 · 实时 PK 对战
           </div>
 
           <h1 className="text-5xl md:text-6xl font-display font-black text-foreground leading-tight mb-6">
@@ -42,52 +63,44 @@ const Home = () => {
           </h1>
 
           <p className="text-lg text-muted-foreground leading-relaxed mb-10 max-w-lg mx-auto">
-            通过科学测评了解你的英语词汇水平，获得个性化学习建议，开启高效词汇提升之旅。
+            通过科学测评了解你的英语词汇水平，与全球玩家实时对战，登顶每周排行榜！
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
             <Button
               size="lg"
               onClick={() => navigate("/test")}
-              className="text-base px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-primary hover:bg-primary/90"
+              className="text-base px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-primary hover:bg-primary/90 w-full sm:w-auto"
             >
               <Target className="h-5 w-5 mr-2" />
               开始测评
             </Button>
-            {lastTest && (
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => navigate("/history")}
-                className="text-base px-8 py-6 rounded-xl"
-              >
-                上次得分：{lastTest.accuracy}%
-              </Button>
-            )}
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate(user ? "/pk" : "/auth")}
+              className="text-base px-8 py-6 rounded-xl w-full sm:w-auto border-accent/40 hover:bg-accent/5"
+            >
+              <Swords className="h-5 w-5 mr-2 text-accent" />
+              1v1 PK 对战
+            </Button>
           </div>
+
+          {lastTest && (
+            <p className="text-sm text-muted-foreground mb-8">
+              上次得分：<span className="font-medium text-foreground">{lastTest.accuracy}%</span>
+            </p>
+          )}
 
           {/* Features */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-xl mx-auto">
-            <FeatureCard
-              icon={<Brain className="h-5 w-5 text-primary" />}
-              title="智能抽题"
-              desc="多难度混合出题"
-            />
-            <FeatureCard
-              icon={<Target className="h-5 w-5 text-accent" />}
-              title="精准评估"
-              desc="五级词汇水平判定"
-            />
-            <FeatureCard
-              icon={<TrendingUp className="h-5 w-5 text-success" />}
-              title="学习建议"
-              desc="个性化提升方案"
-            />
+            <FeatureCard icon={<Brain className="h-5 w-5 text-primary" />} title="智能抽题" desc="多难度混合出题" />
+            <FeatureCard icon={<Swords className="h-5 w-5 text-accent" />} title="实时 PK" desc="与全球玩家对战" />
+            <FeatureCard icon={<TrendingUp className="h-5 w-5 text-success" />} title="排行竞速" desc="周/月榜单争锋" />
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="text-center py-6 text-sm text-muted-foreground">
         词界 WordScope · 词汇量测评工具
       </footer>
