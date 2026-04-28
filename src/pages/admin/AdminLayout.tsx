@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, Navigate, useNavigate } from "react-router-dom";
-import { Shield, BookOpen, Users, LogOut, Home } from "lucide-react";
+import { Shield, BookOpen, Users, LogOut, Home, ImageIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,9 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
         </NavLink>
         <NavLink to="/admin/users" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkIdle}`}>
           <Users className="w-4 h-4" /> 用户管理
+        </NavLink>
+        <NavLink to="/admin/banners" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkIdle}`}>
+          <ImageIcon className="w-4 h-4" /> 广告位管理
         </NavLink>
 
         <div className="mt-auto flex flex-col gap-1">

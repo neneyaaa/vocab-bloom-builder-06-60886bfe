@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getHistory } from "@/lib/testService";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserAvatar } from "@/components/UserAvatar";
+import PromoBanners from "@/components/PromoBanners";
 import { toast } from "sonner";
 
 const Home = () => {
@@ -109,6 +110,9 @@ const Home = () => {
             <FeatureCard icon={<TrendingUp className="h-5 w-5 text-success" />} title="排行竞速" desc="周/月榜单争锋" />
           </div>
         </div>
+
+        {/* Promo / 明星推荐 */}
+        <PromoBanners placement="home_features" className="mt-20" />
       </main>
 
       <footer className="text-center py-6 text-sm text-muted-foreground">
