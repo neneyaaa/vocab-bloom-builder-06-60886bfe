@@ -23,6 +23,7 @@ import Partners from "./pages/Partners";
 import BusinessDashboard from "./pages/business/BusinessDashboard";
 import InquiriesList from "./pages/business/InquiriesList";
 import InquiryDetail from "./pages/business/InquiryDetail";
+import ReviewPage from "./pages/ReviewPage";
 import AIAssistant from "./components/AIAssistant";
 
 const queryClient = new QueryClient();
