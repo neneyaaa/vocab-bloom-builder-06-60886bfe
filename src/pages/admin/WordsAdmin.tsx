@@ -554,6 +554,128 @@ const WordsAdmin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Import Preview Dialog */}
+      <Dialog open={!!importPreview} onOpenChange={(o) => !o && !importing && setImportPreview(null)}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>导入预览 · 请确认</DialogTitle>
+          </DialogHeader>
+          {importPreview && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <Card className="p-3 bg-emerald-500/10 border-emerald-500/30">
+                  <div className="flex items-center gap-2 text-emerald-300">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-xs">新增</span>
+                  </div>
+                  <div className="text-2xl font-bold mt-1">{importPreview.validNew.length}</div>
+                </Card>
+                <Card className="p-3 bg-amber-500/10 border-amber-500/30">
+                  <div className="flex items-center gap-2 text-amber-300">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-xs">重复（库内已存在）</span>
+                  </div>
+                  <div className="text-2xl font-bold mt-1">{importPreview.duplicates.length}</div>
+                </Card>
+                <Card className="p-3 bg-rose-500/10 border-rose-500/30">
+                  <div className="flex items-center gap-2 text-rose-300">
+                    <XCircle className="w-4 h-4" />
+                    <span className="text-xs">无效行</span>
+                  </div>
+                  <div className="text-2xl font-bold mt-1">{importPreview.invalid.length}</div>
+                </Card>
+              </div>
+
+              {importPreview.fileDuplicates.length > 0 && (
+                <div className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded p-2">
+                  文件内出现重复单词，将自动保留最后一次出现：
+                  {importPreview.fileDuplicates.map((d) => ` ${d.word}×${d.count}`).join("，")}
+                </div>
+              )}
+
+              {importPreview.duplicates.length > 0 && (
+                <div>
+                  <Label className="text-sm">重复处理策略</Label>
+                  <RadioGroup
+                    value={importDupStrategy}
+                    onValueChange={(v) => setImportDupStrategy(v as "skip" | "overwrite")}
+                    className="mt-2 space-y-1"
+                  >
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="skip" id="dup-skip" />
+                      <span>跳过重复（仅插入新单词）</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="overwrite" id="dup-over" />
+                      <span>覆盖现有词条（按 word 匹配）</span>
+                    </label>
+                  </RadioGroup>
+                </div>
+              )}
+
+              {importPreview.invalid.length > 0 && (
+                <div>
+                  <Label className="text-sm text-rose-300">无效行（必须先在文件中修复）</Label>
+                  <ScrollArea className="h-32 mt-2 border border-rose-500/30 rounded p-2 bg-rose-500/5">
+                    <ul className="text-xs space-y-1">
+                      {importPreview.invalid.slice(0, 100).map((it) => (
+                        <li key={it.index} className="text-rose-200">
+                          #{it.index}: {it.reason}
+                          {it.raw?.word ? ` — ${String(it.raw.word).slice(0, 40)}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {importPreview.duplicates.length > 0 && (
+                <div>
+                  <Label className="text-sm">重复词汇预览</Label>
+                  <ScrollArea className="h-32 mt-2 border border-slate-700 rounded p-2">
+                    <ul className="text-xs space-y-1">
+                      {importPreview.duplicates.slice(0, 100).map((d) => (
+                        <li key={d.existingId} className="text-slate-300">
+                          <span className="font-mono text-amber-300">{d.row.word}</span>
+                          {" — 现有: "}{d.existing.meaning}
+                          {d.existing.meaning !== d.row.meaning && (
+                            <span className="text-slate-500"> → 新: {d.row.meaning}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {importPreview.invalid.length > 0 && (
+                <p className="text-xs text-rose-300">
+                  存在无效行，为避免数据不一致，本次导入已被阻止。请修复 JSON 后重试。
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setImportPreview(null)} disabled={importing}>
+              取消
+            </Button>
+            <Button
+              onClick={confirmImport}
+              disabled={
+                importing ||
+                !importPreview ||
+                importPreview.invalid.length > 0 ||
+                (importPreview.validNew.length === 0 &&
+                  (importDupStrategy === "skip" || importPreview.duplicates.length === 0))
+              }
+              className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+            >
+              {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : "确认导入"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 };
