@@ -53,6 +53,17 @@ const PKRoom = () => {
   const [finished, setFinished] = useState(false);
   const [resultSaved, setResultSaved] = useState(false);
   const [bubbles, setBubbles] = useState<ChatBubble[]>([]);
+  const myAnswersRef = useRef<Array<{
+    question_index: number;
+    word_id: string | null;
+    word: string;
+    correct_answer: string;
+    user_answer: string | null;
+    is_correct: boolean;
+    difficulty: string;
+    time_taken_ms: number;
+  }>>([]);
+  const questionStartRef = useRef<number>(Date.now());
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const botRef = useRef<BotProfile | null>(null);
