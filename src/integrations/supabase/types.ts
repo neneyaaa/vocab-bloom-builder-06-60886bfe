@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_inquiries: {
+        Row: {
+          budget_range: string | null
+          company_name: string
+          contact_name: string
+          created_at: string
+          email: string
+          id: string
+          inquiry_type: string
+          message: string
+          phone: string | null
+          status: string
+        }
+        Insert: {
+          budget_range?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string
+          email: string
+          id?: string
+          inquiry_type: string
+          message: string
+          phone?: string | null
+          status?: string
+        }
+        Update: {
+          budget_range?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          inquiry_type?: string
+          message?: string
+          phone?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
