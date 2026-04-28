@@ -1,4 +1,5 @@
 import { Word } from "@/data/wordBank";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface AnswerRecord {
   wordId: string;
