@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getMatchQuestions } from "@/lib/pkWords";
+import type { Word } from "@/data/wordBank";
 import { createBot, botPlanAnswer, botRandomChat, BotProfile, BotDifficulty } from "@/lib/aiBot";
 import { UserAvatar } from "@/components/UserAvatar";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -59,7 +60,10 @@ const PKRoom = () => {
   const botChatTimerRef = useRef<number | null>(null);
   const bubbleIdRef = useRef(0);
 
-  const questions = matchId ? getMatchQuestions(matchId, TOTAL_QUESTIONS) : [];
+  const [questions, setQuestions] = useState<Word[]>([]);
+  useEffect(() => {
+    if (matchId) getMatchQuestions(matchId, TOTAL_QUESTIONS).then(setQuestions);
+  }, [matchId]);
   const currentQ = questions[currentIdx];
 
   useEffect(() => {
