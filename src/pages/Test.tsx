@@ -11,6 +11,7 @@ const TOTAL_QUESTIONS = 20;
 
 const Test = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [questions, setQuestions] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
