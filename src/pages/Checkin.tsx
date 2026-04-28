@@ -22,7 +22,7 @@ interface Plan {
   last_checkin_date: string | null;
 }
 interface Tx { id: string; amount: number; reason: string; created_at: string }
-interface Record { id: string; checkin_date: string; accuracy: number; reward_coins: number }
+interface CheckinRecord { id: string; checkin_date: string; accuracy: number; reward_coins: number }
 
 const reasonLabel: Record<string, string> = {
   enroll_charge: "报名扣费",
@@ -39,7 +39,7 @@ export default function Checkin() {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [todayChecked, setTodayChecked] = useState(false);
-  const [history, setHistory] = useState<{ records: Record[]; transactions: Tx[] } | null>(null);
+  const [history, setHistory] = useState<{ records: CheckinRecord[]; transactions: Tx[] } | null>(null);
   const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function Checkin() {
     loadAll();
   }, [user]);
 
-  const callApi = async (action: string, body: Record<string, unknown> = {}) => {
+  const callApi = async (action: string, body: Record<string, any> = {}) => {
     const { data, error } = await supabase.functions.invoke("checkin-api", {
       body: { action, ...body },
     });
