@@ -14,7 +14,10 @@ const levelColors: Record<string, string> = {
 const Result = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const result = (location.state as { result: TestResult })?.result;
+  const { id: routeId } = useParams<{ id: string }>();
+  const state = location.state as { result?: TestResult; cloudId?: string } | null;
+  const result = state?.result;
+  const cloudId = state?.cloudId ?? routeId;
 
   if (!result) {
     navigate("/");
