@@ -204,8 +204,22 @@ const PKRoom = () => {
     if (revealed || !currentQ) return;
     setSelected(optionIdx);
     setRevealed(true);
+    const userAnswer = timeout || optionIdx < 0 ? null : currentQ.options[optionIdx];
     const correct = !timeout && currentQ.options[optionIdx] === currentQ.meaning;
     if (correct) setMyScore((s) => s + 1);
+
+    // Record this answer for cloud persistence at end of match
+    const wid = (currentQ as any).id as string | undefined;
+    myAnswersRef.current.push({
+      question_index: currentIdx,
+      word_id: wid && /^[0-9a-f-]{36}$/i.test(wid) ? wid : null,
+      word: currentQ.word,
+      correct_answer: currentQ.meaning,
+      user_answer: userAnswer,
+      is_correct: correct,
+      difficulty: currentQ.difficulty,
+      time_taken_ms: Date.now() - questionStartRef.current,
+    });
 
     if (!isBotMatch) {
       channelRef.current?.send({
