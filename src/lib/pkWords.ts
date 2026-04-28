@@ -1,10 +1,16 @@
-import wordBank, { Word } from "@/data/wordBank";
+import { Word, loadAllWords } from "@/data/wordBank";
 
 /**
  * Deterministically pick N words for a match using a seeded shuffle so both
  * players get the exact same questions in the exact same order.
+ * Both players must call this with the same seed AND have synced word lists,
+ * so we sort by id first to ensure deterministic ordering across clients.
  */
-export function getMatchQuestions(seed: string, count = 10): Word[] {
+export async function getMatchQuestions(seed: string, count = 10): Promise<Word[]> {
+  const all = await loadAllWords();
+  // Sort by id for deterministic base order (both clients see the same array)
+  const base = [...all].sort((a, b) => a.id.localeCompare(b.id));
+
   // Mulberry32 PRNG seeded by hashing the match seed
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
@@ -18,10 +24,9 @@ export function getMatchQuestions(seed: string, count = 10): Word[] {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 
-  const arr = [...wordBank];
-  for (let i = arr.length - 1; i > 0; i--) {
+  for (let i = base.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [base[i], base[j]] = [base[j], base[i]];
   }
-  return arr.slice(0, count);
+  return base.slice(0, count);
 }

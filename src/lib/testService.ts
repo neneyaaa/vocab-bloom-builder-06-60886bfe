@@ -1,7 +1,7 @@
 import { Word } from "@/data/wordBank";
 
 export interface AnswerRecord {
-  wordId: number;
+  wordId: string;
   word: string;
   correctAnswer: string;
   userAnswer: string | null; // null = "不认识"
