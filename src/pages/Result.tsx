@@ -1,5 +1,5 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, RotateCcw, Home, Trophy, Target, XCircle, HelpCircle, Clock, Lightbulb } from "lucide-react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { BookOpen, RotateCcw, Home, Trophy, Target, XCircle, HelpCircle, Clock, Lightbulb, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TestResult } from "@/lib/testService";
 
