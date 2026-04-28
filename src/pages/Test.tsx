@@ -4,7 +4,8 @@ import { BookOpen, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Word, getRandomQuestions } from "@/data/wordBank";
-import { AnswerRecord, evaluateAnswer, calculateResult, saveResult } from "@/lib/testService";
+import { AnswerRecord, evaluateAnswer, calculateResult, saveResult, saveResultToCloud } from "@/lib/testService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const TOTAL_QUESTIONS = 20;
 
