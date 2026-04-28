@@ -1,0 +1,398 @@
+import { useEffect, useState, FormEvent } from "react";
+import AdminLayout from "./AdminLayout";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from "@/components/ui/tabs";
+import { Plus, Pencil, Trash2, Sparkles, Search, Loader2, Download, Upload } from "lucide-react";
+import { toast } from "sonner";
+import { clearWordsCache } from "@/data/wordBank";
+
+interface WordRow {
+  id: string;
+  word: string;
+  meaning: string;
+  options: string[];
+  difficulty: "easy" | "medium" | "hard";
+  category: string | null;
+  enabled: boolean;
+  created_at: string;
+}
+
+const emptyForm = {
+  word: "", meaning: "", options: ["", "", "", ""],
+  difficulty: "medium" as "easy" | "medium" | "hard",
+  category: "",
+  enabled: true,
+};
+
+const WordsAdmin = () => {
+  const [words, setWords] = useState<WordRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterDiff, setFilterDiff] = useState<string>("all");
+  const [editing, setEditing] = useState<WordRow | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiCount, setAiCount] = useState(10);
+  const [aiDiff, setAiDiff] = useState("medium");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("words")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1000);
+    if (error) toast.error(error.message);
+    setWords((data ?? []) as WordRow[]);
+    setLoading(false);
+    clearWordsCache();
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const filtered = words.filter((w) => {
+    if (filterDiff !== "all" && w.difficulty !== filterDiff) return false;
+    if (search && !w.word.toLowerCase().includes(search.toLowerCase()) &&
+        !w.meaning.includes(search)) return false;
+    return true;
+  });
+
+  const openNew = () => {
+    setEditing(null);
+    setForm(emptyForm);
+    setFormOpen(true);
+  };
+  const openEdit = (w: WordRow) => {
+    setEditing(w);
+    setForm({
+      word: w.word, meaning: w.meaning, options: [...w.options],
+      difficulty: w.difficulty, category: w.category ?? "", enabled: w.enabled,
+    });
+    setFormOpen(true);
+  };
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!form.options.includes(form.meaning)) {
+      toast.error("选项中必须包含正确释义");
+      return;
+    }
+    const payload = {
+      word: form.word.trim(),
+      meaning: form.meaning.trim(),
+      options: form.options.map((o) => o.trim()),
+      difficulty: form.difficulty,
+      category: form.category.trim() || null,
+      enabled: form.enabled,
+    };
+    if (editing) {
+      const { error } = await supabase.from("words").update(payload).eq("id", editing.id);
+      if (error) return toast.error(error.message);
+      toast.success("已更新");
+    } else {
+      const { error } = await supabase.from("words").insert(payload);
+      if (error) return toast.error(error.message);
+      toast.success("已添加");
+    }
+    setFormOpen(false);
+    load();
+  };
+
+  const remove = async (w: WordRow) => {
+    if (!confirm(`确定删除 "${w.word}" ?`)) return;
+    const { error } = await supabase.from("words").delete().eq("id", w.id);
+    if (error) return toast.error(error.message);
+    toast.success("已删除");
+    load();
+  };
+
+  const toggleEnabled = async (w: WordRow) => {
+    const { error } = await supabase.from("words").update({ enabled: !w.enabled }).eq("id", w.id);
+    if (error) return toast.error(error.message);
+    load();
+  };
+
+  const aiGenerate = async () => {
+    if (!aiTopic.trim()) return toast.error("请输入主题");
+    setAiLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-api", {
+        body: { action: "ai_generate_words", topic: aiTopic, count: aiCount, difficulty: aiDiff },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success(`AI 已生成 ${(data as any).inserted} 个词`);
+      setAiOpen(false);
+      setAiTopic("");
+      load();
+    } catch (e: any) {
+      toast.error(e.message ?? "AI 生成失败");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const exportJSON = () => {
+    const blob = new Blob([JSON.stringify(words, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `words-${Date.now()}.json`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]; if (!file) return;
+    try {
+      const text = await file.text();
+      const arr = JSON.parse(text);
+      if (!Array.isArray(arr)) throw new Error("格式错误");
+      const rows = arr
+        .filter((w) => w?.word && w?.meaning && Array.isArray(w?.options) && w.options.length === 4)
+        .map((w) => ({
+          word: String(w.word).trim(),
+          meaning: String(w.meaning).trim(),
+          options: w.options.map((o: any) => String(o).trim()),
+          difficulty: ["easy","medium","hard"].includes(w.difficulty) ? w.difficulty : "medium",
+          category: w.category ?? null,
+          enabled: w.enabled !== false,
+        }));
+      if (rows.length === 0) return toast.error("无有效数据");
+      const { error } = await supabase.from("words").insert(rows);
+      if (error) throw error;
+      toast.success(`已导入 ${rows.length} 个词`);
+      load();
+    } catch (err: any) {
+      toast.error(err.message ?? "导入失败");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const diffColor = (d: string) =>
+    d === "easy" ? "bg-emerald-500/20 text-emerald-300" :
+    d === "hard" ? "bg-rose-500/20 text-rose-300" : "bg-amber-500/20 text-amber-300";
+
+  return (
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">词汇库管理</h1>
+          <p className="text-slate-400 mt-1">共 {words.length} 个词条 · 启用 {words.filter(w => w.enabled).length}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={openNew} className="bg-amber-500 hover:bg-amber-600 text-slate-900">
+            <Plus className="w-4 h-4 mr-1" /> 新增
+          </Button>
+          <Button onClick={() => setAiOpen(true)} variant="outline" className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10">
+            <Sparkles className="w-4 h-4 mr-1" /> AI 生成
+          </Button>
+          <Button onClick={exportJSON} variant="outline" className="border-slate-700">
+            <Download className="w-4 h-4 mr-1" /> 导出
+          </Button>
+          <label className="inline-flex">
+            <input type="file" accept="application/json" onChange={importJSON} className="hidden" />
+            <span className="inline-flex items-center px-4 py-2 text-sm border border-slate-700 rounded-md cursor-pointer hover:bg-slate-800">
+              <Upload className="w-4 h-4 mr-1" /> 导入
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <Card className="p-4 bg-slate-900 border-slate-800 mb-4">
+        <div className="flex gap-3">
+          <div className="flex-1 relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜索单词或释义..."
+              className="pl-9 bg-slate-800 border-slate-700"
+            />
+          </div>
+          <Select value={filterDiff} onValueChange={setFilterDiff}>
+            <SelectTrigger className="w-40 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部难度</SelectItem>
+              <SelectItem value="easy">简单</SelectItem>
+              <SelectItem value="medium">中等</SelectItem>
+              <SelectItem value="hard">困难</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </Card>
+
+      <Card className="bg-slate-900 border-slate-800 overflow-hidden">
+        {loading ? (
+          <div className="p-8 text-center text-slate-500">加载中...</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-800/50 text-slate-400">
+                <tr>
+                  <th className="text-left px-4 py-2.5">单词</th>
+                  <th className="text-left px-4 py-2.5">释义</th>
+                  <th className="text-left px-4 py-2.5">难度</th>
+                  <th className="text-left px-4 py-2.5">分类</th>
+                  <th className="text-left px-4 py-2.5">状态</th>
+                  <th className="text-right px-4 py-2.5">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((w) => (
+                  <tr key={w.id} className="border-t border-slate-800 hover:bg-slate-800/30">
+                    <td className="px-4 py-2.5 font-mono font-semibold">{w.word}</td>
+                    <td className="px-4 py-2.5 text-slate-300">{w.meaning}</td>
+                    <td className="px-4 py-2.5">
+                      <Badge className={diffColor(w.difficulty)}>{w.difficulty}</Badge>
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-400">{w.category ?? "-"}</td>
+                    <td className="px-4 py-2.5">
+                      <button
+                        onClick={() => toggleEnabled(w)}
+                        className={`text-xs px-2 py-0.5 rounded ${w.enabled ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-700 text-slate-400"}`}
+                      >
+                        {w.enabled ? "启用" : "停用"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(w)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-rose-400 hover:text-rose-300" onClick={() => remove(w)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={6} className="text-center text-slate-500 py-8">暂无匹配记录</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Edit / New Dialog */}
+      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editing ? "编辑词条" : "新增词条"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={submit} className="space-y-3">
+            <div>
+              <Label>单词</Label>
+              <Input value={form.word} required onChange={(e) => setForm({ ...form, word: e.target.value })} className="bg-slate-800 border-slate-700" />
+            </div>
+            <div>
+              <Label>正确释义（必须出现在下面 4 个选项中）</Label>
+              <Input value={form.meaning} required onChange={(e) => setForm({ ...form, meaning: e.target.value })} className="bg-slate-800 border-slate-700" />
+            </div>
+            <div>
+              <Label>4 个选项</Label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                {form.options.map((opt, i) => (
+                  <Input
+                    key={i}
+                    value={opt}
+                    required
+                    placeholder={`选项 ${i + 1}`}
+                    onChange={(e) => {
+                      const ops = [...form.options];
+                      ops[i] = e.target.value;
+                      setForm({ ...form, options: ops });
+                    }}
+                    className="bg-slate-800 border-slate-700"
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>难度</Label>
+                <Select value={form.difficulty} onValueChange={(v: any) => setForm({ ...form, difficulty: v })}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">简单</SelectItem>
+                    <SelectItem value="medium">中等</SelectItem>
+                    <SelectItem value="hard">困难</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>分类</Label>
+                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="bg-slate-800 border-slate-700" placeholder="可选，如 商务/学术" />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} />
+              启用（用户可见）
+            </label>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setFormOpen(false)}>取消</Button>
+              <Button type="submit" className="bg-amber-500 hover:bg-amber-600 text-slate-900">保存</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Generate Dialog */}
+      <Dialog open={aiOpen} onOpenChange={setAiOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Sparkles className="w-5 h-5 text-amber-400" /> AI 自动生成词汇</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>主题 / 场景</Label>
+              <Input value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} placeholder="例如：商务英语、雅思学术、计算机科学..." className="bg-slate-800 border-slate-700" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>数量 (1–30)</Label>
+                <Input type="number" min={1} max={30} value={aiCount} onChange={(e) => setAiCount(Number(e.target.value))} className="bg-slate-800 border-slate-700" />
+              </div>
+              <div>
+                <Label>难度</Label>
+                <Select value={aiDiff} onValueChange={setAiDiff}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="easy">简单</SelectItem>
+                    <SelectItem value="medium">中等</SelectItem>
+                    <SelectItem value="hard">困难</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500">由 Lovable AI（Gemini）即时生成，并自动入库。</p>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAiOpen(false)}>取消</Button>
+            <Button onClick={aiGenerate} disabled={aiLoading} className="bg-amber-500 hover:bg-amber-600 text-slate-900">
+              {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "开始生成"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </AdminLayout>
+  );
+};
+
+export default WordsAdmin;
