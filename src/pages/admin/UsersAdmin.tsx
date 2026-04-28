@@ -91,6 +91,8 @@ const UsersAdmin = () => {
 
   const grantAdmin = (u: AdminUser) => callApi({ action: "grant_admin", user_id: u.id }, "已授予管理员");
   const revokeAdmin = (u: AdminUser) => callApi({ action: "revoke_admin", user_id: u.id }, "已撤销管理员");
+  const grantBiz = (u: AdminUser) => callApi({ action: "grant_business_dev", user_id: u.id }, "已授予商务");
+  const revokeBiz = (u: AdminUser) => callApi({ action: "revoke_business_dev", user_id: u.id }, "已撤销商务");
 
   return (
     <AdminLayout>
