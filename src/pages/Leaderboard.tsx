@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Trophy, Medal, Crown } from "lucide-react";
+import { ArrowLeft, Trophy, Medal, Crown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "@/components/UserAvatar";
 
 interface RankRow {
   user_id: string;
@@ -105,7 +106,13 @@ const Leaderboard = () => {
             ) : (
               <div className="space-y-2">
                 {rows.map((r, idx) => (
-                  <RankRowCard key={r.user_id} rank={idx + 1} row={r} isMe={r.user_id === user?.id} />
+                  <RankRowCard
+                    key={r.user_id}
+                    rank={idx + 1}
+                    row={r}
+                    isMe={r.user_id === user?.id}
+                    onClick={r.user_id === user?.id ? () => navigate("/my-stats") : undefined}
+                  />
                 ))}
               </div>
             )}
@@ -116,31 +123,34 @@ const Leaderboard = () => {
   );
 };
 
-const RankRowCard = ({ rank, row, isMe }: { rank: number; row: RankRow; isMe: boolean }) => {
+const RankRowCard = ({ rank, row, isMe, onClick }: { rank: number; row: RankRow; isMe: boolean; onClick?: () => void }) => {
   const winRate = row.total > 0 ? Math.round((row.wins / row.total) * 100) : 0;
-  return (
-    <div className={`flex items-center gap-4 p-4 rounded-xl border ${
-      isMe ? "border-primary bg-primary/5" : "border-border/60 bg-card"
+  const inner = (
+    <div className={`flex items-center gap-4 p-4 rounded-xl border w-full text-left transition-colors ${
+      isMe ? "border-primary bg-primary/5 hover:bg-primary/10" : "border-border/60 bg-card"
     }`}>
-      <div className="w-8 flex justify-center">
+      <div className="w-8 flex justify-center shrink-0">
         {rank === 1 ? <Crown className="h-6 w-6 text-accent" /> :
          rank === 2 ? <Medal className="h-6 w-6 text-muted-foreground" /> :
          rank === 3 ? <Medal className="h-6 w-6 text-amber-700" /> :
          <span className="font-mono text-sm text-muted-foreground">#{rank}</span>}
       </div>
-      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-display font-bold text-primary">
-        {row.username.slice(0, 1).toUpperCase()}
-      </div>
+      <UserAvatar username={row.username} avatarUrl={row.avatar_url} size="md" />
       <div className="flex-1 min-w-0">
-        <div className="font-medium truncate">{row.username}{isMe && <span className="text-xs text-primary ml-2">(你)</span>}</div>
+        <div className="font-medium truncate">
+          {row.username}
+          {isMe && <span className="text-xs text-primary ml-2">(你)</span>}
+        </div>
         <div className="text-xs text-muted-foreground">{row.total} 场 · 胜率 {winRate}%</div>
       </div>
-      <div className="text-right">
+      <div className="text-right shrink-0">
         <div className="font-display font-black text-lg">{row.wins}</div>
         <div className="text-xs text-muted-foreground">胜场</div>
       </div>
+      {onClick && <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
     </div>
   );
+  return onClick ? <button onClick={onClick} className="w-full">{inner}</button> : inner;
 };
 
 export default Leaderboard;

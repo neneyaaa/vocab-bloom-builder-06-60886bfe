@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Swords, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Swords, Loader2, Users, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,20 +8,24 @@ import { toast } from "sonner";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
 const LOBBY_CHANNEL = "pk-lobby-v1";
+const AI_FALLBACK_MS = 8000; // After 8s without a human, offer AI bot
 
 const PKLobby = () => {
   const navigate = useNavigate();
   const { user, profile, loading } = useAuth();
   const [searching, setSearching] = useState(false);
+  const [waitTime, setWaitTime] = useState(0);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [aiOffered, setAiOffered] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const matchedRef = useRef(false);
+  const tickRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth", { replace: true });
   }, [loading, user, navigate]);
 
-  // Track online presence in lobby (always, when logged in)
+  // Online presence indicator
   useEffect(() => {
     if (!user || !profile) return;
     const presenceChannel = supabase.channel("pk-presence", {
@@ -45,7 +49,10 @@ const PKLobby = () => {
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+    if (tickRef.current) { clearInterval(tickRef.current); tickRef.current = null; }
     setSearching(false);
+    setWaitTime(0);
+    setAiOffered(false);
   };
 
   useEffect(() => () => cleanup(), []);
@@ -53,19 +60,28 @@ const PKLobby = () => {
   const startMatching = async () => {
     if (!user || !profile) return;
     setSearching(true);
+    setWaitTime(0);
+    setAiOffered(false);
     matchedRef.current = false;
+
+    // Wait timer
+    tickRef.current = window.setInterval(() => {
+      setWaitTime((w) => {
+        const nw = w + 1;
+        if (nw * 1000 >= AI_FALLBACK_MS) setAiOffered(true);
+        return nw;
+      });
+    }, 1000);
 
     const channel = supabase.channel(LOBBY_CHANNEL, {
       config: { presence: { key: user.id }, broadcast: { self: false } },
     });
     channelRef.current = channel;
 
-    // Listen for match offers
     channel.on("broadcast", { event: "match_offer" }, (payload) => {
       const { matchId, from, to } = payload.payload as { matchId: string; from: string; to: string };
       if (to === user.id && !matchedRef.current) {
         matchedRef.current = true;
-        // Confirm acceptance
         channel.send({
           type: "broadcast",
           event: "match_accept",
@@ -90,8 +106,6 @@ const PKLobby = () => {
     await channel.subscribe(async (status) => {
       if (status !== "SUBSCRIBED") return;
       await channel.track({ user_id: user.id, username: profile.username, ts: Date.now() });
-
-      // Try matching after a brief delay so others are tracked
       setTimeout(() => tryMatch(channel), 800);
     });
   };
@@ -105,12 +119,10 @@ const PKLobby = () => {
       .sort((a, b) => a.ts - b.ts);
 
     if (candidates.length === 0) {
-      // Retry in 2s while waiting
       setTimeout(() => tryMatch(channel), 2000);
       return;
     }
 
-    // Deterministic: smaller user_id sends the offer to avoid duplicates
     const opponent = candidates[0];
     if (user.id < opponent.user_id) {
       const matchId = `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -120,17 +132,16 @@ const PKLobby = () => {
         event: "match_offer",
         payload: { matchId, from: user.id, to: opponent.user_id },
       });
-      // Fallback: navigate after we get the accept (handled above).
-      // Safety timeout: if no accept within 5s, retry
-      setTimeout(() => {
-        if (matchedRef.current && channelRef.current) {
-          // Already navigated or accept received
-        }
-      }, 5000);
     } else {
-      // Wait for the other side to send an offer; retry timer
       setTimeout(() => tryMatch(channel), 2500);
     }
+  };
+
+  const startWithBot = (difficulty: "easy" | "medium" | "hard") => {
+    if (!user) return;
+    cleanup();
+    const matchId = `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    navigate(`/pk/${matchId}?bot=${difficulty}`);
   };
 
   const cancel = () => {
@@ -152,7 +163,7 @@ const PKLobby = () => {
       </nav>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
-        <div className="text-center max-w-md mx-auto">
+        <div className="text-center max-w-md mx-auto w-full">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 mb-6">
             <Swords className="h-10 w-10 text-primary" />
           </div>
@@ -162,24 +173,58 @@ const PKLobby = () => {
           </p>
 
           {!searching ? (
-            <Button
-              size="lg"
-              onClick={startMatching}
-              className="text-base px-10 py-6 rounded-xl shadow-lg w-full sm:w-auto"
-            >
-              <Swords className="h-5 w-5 mr-2" />开始匹配对手
-            </Button>
+            <div className="space-y-4">
+              <Button
+                size="lg"
+                onClick={startMatching}
+                className="text-base px-10 py-6 rounded-xl shadow-lg w-full"
+              >
+                <Swords className="h-5 w-5 mr-2" />匹配真人对手
+              </Button>
+
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border/60" /></div>
+                <div className="relative flex justify-center">
+                  <span className="bg-background px-3 text-xs text-muted-foreground">或挑战 AI</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <BotChoice difficulty="easy" label="新手" emoji="🤖" onClick={() => startWithBot("easy")} />
+                <BotChoice difficulty="medium" label="中级" emoji="🦾" onClick={() => startWithBot("medium")} highlight />
+                <BotChoice difficulty="hard" label="高手" emoji="👾" onClick={() => startWithBot("hard")} />
+              </div>
+            </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3 p-6 rounded-xl bg-card border border-border/60">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div className="flex flex-col items-center gap-3 p-6 rounded-xl bg-card border border-border/60">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="font-medium">正在搜索对手...</span>
+                <span className="text-xs text-muted-foreground">已等待 {waitTime}s</span>
               </div>
+
+              {aiOffered && (
+                <div className="p-4 rounded-xl bg-accent/10 border border-accent/30 text-left animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Bot className="h-4 w-4 text-accent" />
+                    <span className="font-medium text-sm">没有真人对手？试试 AI 陪练</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    AI 机器人会按你选择的难度模拟答题，正式战绩会计入你的记录。
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button size="sm" variant="outline" onClick={() => startWithBot("easy")}>🤖 新手</Button>
+                    <Button size="sm" onClick={() => startWithBot("medium")}>🦾 中级</Button>
+                    <Button size="sm" variant="outline" onClick={() => startWithBot("hard")}>👾 高手</Button>
+                  </div>
+                </div>
+              )}
+
               <Button variant="outline" size="lg" onClick={cancel} className="w-full">
                 取消匹配
               </Button>
               <p className="text-xs text-muted-foreground">
-                💡 测试时可在另一个浏览器窗口登录另一个账号同时点击匹配
+                💡 测试时可在另一个浏览器窗口登录另一账号同时点匹配
               </p>
             </div>
           )}
@@ -188,5 +233,17 @@ const PKLobby = () => {
     </div>
   );
 };
+
+const BotChoice = ({ difficulty, label, emoji, onClick, highlight }: { difficulty: string; label: string; emoji: string; onClick: () => void; highlight?: boolean }) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center gap-1 p-3 rounded-xl border-2 transition-all hover:border-primary hover:bg-primary/5 ${
+      highlight ? "border-primary/40 bg-primary/5" : "border-border/60 bg-card"
+    }`}
+  >
+    <span className="text-2xl">{emoji}</span>
+    <span className="text-xs font-medium">{label}</span>
+  </button>
+);
 
 export default PKLobby;

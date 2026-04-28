@@ -3,6 +3,7 @@ import { BookOpen, History, Sparkles, Brain, Target, TrendingUp, Swords, Trophy,
 import { Button } from "@/components/ui/button";
 import { getHistory } from "@/lib/testService";
 import { useAuth } from "@/contexts/AuthContext";
+import { UserAvatar } from "@/components/UserAvatar";
 import { toast } from "sonner";
 
 const Home = () => {
@@ -34,10 +35,14 @@ const Home = () => {
           </Button>
           {user ? (
             <>
-              <span className="hidden sm:inline text-sm text-muted-foreground px-2">
-                你好，<span className="text-foreground font-medium">{profile?.username ?? "..."}</span>
-              </span>
-              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <button
+                onClick={() => navigate("/profile")}
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-muted transition-colors"
+              >
+                <UserAvatar username={profile?.username} avatarUrl={profile?.avatar_url} size="sm" />
+                <span className="hidden sm:inline text-sm font-medium">{profile?.username ?? "..."}</span>
+              </button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut} title="退出登录">
                 <LogOut className="h-4 w-4" />
               </Button>
             </>
