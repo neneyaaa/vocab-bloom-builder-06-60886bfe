@@ -134,6 +134,48 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (action === "grant_business_dev") {
+      const { user_id } = body;
+      if (!user_id) return json({ error: "缺少 user_id" }, 400);
+      await admin.from("user_roles").upsert({ user_id, role: "business_dev" });
+      return json({ ok: true });
+    }
+
+    if (action === "revoke_business_dev") {
+      const { user_id } = body;
+      if (!user_id) return json({ error: "缺少 user_id" }, 400);
+      await admin.from("user_roles").delete().eq("user_id", user_id).eq("role", "business_dev");
+      return json({ ok: true });
+    }
+
+    if (action === "list_business_staff") {
+      // List all users with admin or business_dev role (for inquiry assignment dropdown)
+      const { data: roleRows } = await admin
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["admin", "business_dev"]);
+      const ids = Array.from(new Set((roleRows ?? []).map((r: any) => r.user_id)));
+      if (ids.length === 0) return json({ staff: [] });
+      const { data: profiles } = await admin
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", ids);
+      const rmap = new Map<string, string[]>();
+      (roleRows ?? []).forEach((r: any) => {
+        const arr = rmap.get(r.user_id) ?? [];
+        arr.push(r.role);
+        rmap.set(r.user_id, arr);
+      });
+      return json({
+        staff: (profiles ?? []).map((p: any) => ({
+          id: p.id,
+          username: p.username,
+          avatar_url: p.avatar_url,
+          roles: rmap.get(p.id) ?? [],
+        })),
+      });
+    }
+
     // ===== AI Generate words =====
     if (action === "ai_generate_words") {
       if (!LOVABLE_API_KEY) return json({ error: "AI 未配置" }, 500);
