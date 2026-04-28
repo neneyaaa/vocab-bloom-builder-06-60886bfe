@@ -19,6 +19,7 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import WordsAdmin from "./pages/admin/WordsAdmin";
 import UsersAdmin from "./pages/admin/UsersAdmin";
+import BannersAdmin from "./pages/admin/BannersAdmin";
 import Partners from "./pages/Partners";
 import BusinessDashboard from "./pages/business/BusinessDashboard";
 import InquiriesList from "./pages/business/InquiriesList";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/words" element={<WordsAdmin />} />
             <Route path="/admin/users" element={<UsersAdmin />} />
+            <Route path="/admin/banners" element={<BannersAdmin />} />
             <Route path="/partners" element={<Partners />} />
             <Route path="/business" element={<BusinessDashboard />} />
             <Route path="/business/inquiries" element={<InquiriesList />} />
