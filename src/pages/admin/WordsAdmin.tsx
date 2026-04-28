@@ -70,6 +70,10 @@ const WordsAdmin = () => {
   const [aiDiff, setAiDiff] = useState("medium");
   const [aiLoading, setAiLoading] = useState(false);
 
+  // Import flow state
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
+  const [importDupStrategy, setImportDupStrategy] = useState<"skip" | "overwrite">("skip");
+  const [importing, setImporting] = useState(false);
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
