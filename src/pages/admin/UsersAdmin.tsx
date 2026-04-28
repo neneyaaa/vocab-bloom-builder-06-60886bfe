@@ -10,7 +10,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/UserAvatar";
-import { ShieldOff, ShieldCheck, Pencil, Search, Loader2, Crown } from "lucide-react";
+import { ShieldOff, ShieldCheck, Pencil, Search, Loader2, Crown, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 
