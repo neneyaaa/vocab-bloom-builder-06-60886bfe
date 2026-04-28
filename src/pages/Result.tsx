@@ -83,6 +83,16 @@ const Result = () => {
             <RotateCcw className="h-4 w-4 mr-2" />
             再测一次
           </Button>
+          {cloudId && (
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/review/test/${cloudId}`)}
+              className="flex-1 py-5 rounded-xl"
+            >
+              <ListChecks className="h-4 w-4 mr-2" />
+              查看每题对错
+            </Button>
+          )}
           <Button variant="outline" onClick={() => navigate("/")} className="flex-1 py-5 rounded-xl">
             <Home className="h-4 w-4 mr-2" />
             返回首页
