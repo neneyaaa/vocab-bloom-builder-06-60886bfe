@@ -219,7 +219,7 @@ const WordsAdmin = () => {
         if (r.ok) {
           validRows.push(r.row);
         } else {
-          invalid.push({ index: i, raw, reason: r.reason });
+          invalid.push({ index: i, raw, reason: (r as { ok: false; reason: string }).reason });
         }
       });
 
