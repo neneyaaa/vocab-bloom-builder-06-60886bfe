@@ -216,7 +216,7 @@ const WordsAdmin = () => {
       const validRows: ImportRow[] = [];
       arr.forEach((raw, i) => {
         const r = validateRow(raw);
-        if (r.ok) validRows.push(r.row);
+        if (r.ok === true) validRows.push(r.row);
         else invalid.push({ index: i, raw, reason: r.reason });
       });
 
