@@ -14,6 +14,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      checkin_plans: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          daily_reward: number
+          days_completed: number
+          enroll_cost: number
+          id: string
+          last_checkin_date: string | null
+          required_accuracy: number
+          required_days: number
+          reward_total: number
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          daily_reward?: number
+          days_completed?: number
+          enroll_cost?: number
+          id?: string
+          last_checkin_date?: string | null
+          required_accuracy?: number
+          required_days?: number
+          reward_total?: number
+          started_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          daily_reward?: number
+          days_completed?: number
+          enroll_cost?: number
+          id?: string
+          last_checkin_date?: string | null
+          required_accuracy?: number
+          required_days?: number
+          reward_total?: number
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      checkin_records: {
+        Row: {
+          accuracy: number
+          checkin_date: string
+          created_at: string
+          id: string
+          plan_id: string
+          reward_coins: number
+          test_run_id: string | null
+          user_id: string
+        }
+        Insert: {
+          accuracy: number
+          checkin_date: string
+          created_at?: string
+          id?: string
+          plan_id: string
+          reward_coins?: number
+          test_run_id?: string | null
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          checkin_date?: string
+          created_at?: string
+          id?: string
+          plan_id?: string
+          reward_coins?: number
+          test_run_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          reason: string
+          ref_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          reason: string
+          ref_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string
+          ref_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       inquiry_followups: {
         Row: {
           author_id: string
@@ -367,6 +475,24 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          coins: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coins?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coins?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { BookOpen, History, Sparkles, Brain, Target, TrendingUp, Swords, Trophy, LogIn, LogOut } from "lucide-react";
+import { BookOpen, History, Sparkles, Brain, Target, TrendingUp, Swords, Trophy, LogIn, LogOut, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getHistory } from "@/lib/testService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,6 +33,11 @@ const Home = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate("/history")} className="text-muted-foreground hover:text-foreground hidden sm:inline-flex">
             <History className="h-4 w-4 mr-1" />历史
           </Button>
+          {user && (
+            <Button variant="ghost" size="sm" onClick={() => navigate("/checkin")} className="text-muted-foreground hover:text-foreground">
+              <Coins className="h-4 w-4 mr-1 text-gold" />打卡
+            </Button>
+          )}
           {user ? (
             <>
               <button

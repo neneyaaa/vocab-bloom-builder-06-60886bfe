@@ -1,7 +1,10 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { BookOpen, RotateCcw, Home, Trophy, Target, XCircle, HelpCircle, Clock, Lightbulb, ListChecks } from "lucide-react";
+import { useState } from "react";
+import { BookOpen, RotateCcw, Home, Trophy, Target, XCircle, HelpCircle, Clock, Lightbulb, ListChecks, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TestResult } from "@/lib/testService";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const levelColors: Record<string, string> = {
   "卓越": "text-gold",
@@ -18,11 +21,34 @@ const Result = () => {
   const state = location.state as { result?: TestResult; cloudId?: string } | null;
   const result = state?.result;
   const cloudId = state?.cloudId ?? routeId;
+  const [checking, setChecking] = useState(false);
 
   if (!result) {
     navigate("/");
     return null;
   }
+
+  const handleCheckin = async () => {
+    if (!cloudId) {
+      toast.error("缺少测评 ID，无法打卡");
+      return;
+    }
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("checkin-api", {
+        body: { action: "checkin", test_run_id: cloudId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const bonus = data.completion_bonus > 0 ? `，🎉 完成 100 天大奖 +${data.completion_bonus} 币！` : "";
+      toast.success(`打卡成功！第 ${data.days_completed}/${data.required_days} 天，奖励 +${data.reward_today} 币${bonus}`);
+      navigate("/checkin");
+    } catch (e: any) {
+      toast.error(e.message ?? "打卡失败");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -79,7 +105,13 @@ const Result = () => {
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 w-full">
-          <Button onClick={() => navigate("/test")} className="flex-1 py-5 rounded-xl">
+          {result.accuracy >= 60 && (
+            <Button onClick={handleCheckin} disabled={checking} className="flex-1 py-5 rounded-xl bg-gold text-foreground hover:bg-gold/90">
+              <Coins className="h-4 w-4 mr-2" />
+              {checking ? "打卡中..." : "今日打卡"}
+            </Button>
+          )}
+          <Button onClick={() => navigate("/test")} variant="outline" className="flex-1 py-5 rounded-xl">
             <RotateCcw className="h-4 w-4 mr-2" />
             再测一次
           </Button>
