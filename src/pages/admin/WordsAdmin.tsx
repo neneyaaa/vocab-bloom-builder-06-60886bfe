@@ -455,6 +455,7 @@ const WordsAdmin = () => {
                 <tr>
                   <th className="text-left px-4 py-2.5">单词</th>
                   <th className="text-left px-4 py-2.5">释义</th>
+                  <th className="text-left px-4 py-2.5">学段</th>
                   <th className="text-left px-4 py-2.5">难度</th>
                   <th className="text-left px-4 py-2.5">分类</th>
                   <th className="text-left px-4 py-2.5">状态</th>
@@ -466,6 +467,13 @@ const WordsAdmin = () => {
                   <tr key={w.id} className="border-t border-slate-800 hover:bg-slate-800/30">
                     <td className="px-4 py-2.5 font-mono font-semibold">{w.word}</td>
                     <td className="px-4 py-2.5 text-slate-300">{w.meaning}</td>
+                    <td className="px-4 py-2.5">
+                      {w.stage ? (
+                        <Badge className="bg-sky-500/20 text-sky-300">{STAGE_LABEL[w.stage]}</Badge>
+                      ) : (
+                        <span className="text-slate-600 text-xs">-</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5">
                       <Badge className={diffColor(w.difficulty)}>{w.difficulty}</Badge>
                     </td>
