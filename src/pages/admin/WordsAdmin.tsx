@@ -591,10 +591,22 @@ const WordsAdmin = () => {
               <Label>主题 / 场景</Label>
               <Input value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} placeholder="例如：商务英语、雅思学术、计算机科学..." className="bg-slate-800 border-slate-700" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>数量 (1–30)</Label>
                 <Input type="number" min={1} max={30} value={aiCount} onChange={(e) => setAiCount(Number(e.target.value))} className="bg-slate-800 border-slate-700" />
+              </div>
+              <div>
+                <Label>学段</Label>
+                <Select value={aiStage || "none"} onValueChange={(v) => setAiStage((v === "none" ? "" : v) as "" | Stage)}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">不限</SelectItem>
+                    <SelectItem value="primary">小学</SelectItem>
+                    <SelectItem value="junior">初中</SelectItem>
+                    <SelectItem value="senior">高中</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>难度</Label>
@@ -608,7 +620,9 @@ const WordsAdmin = () => {
                 </Select>
               </div>
             </div>
-            <p className="text-xs text-slate-500">由 Lovable AI（Gemini）即时生成，并自动入库。</p>
+            <p className="text-xs text-slate-500">
+              选择学段后，AI 会按照该学段的课标高频词汇生成，并自动写入 stage 字段。
+            </p>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAiOpen(false)}>取消</Button>
