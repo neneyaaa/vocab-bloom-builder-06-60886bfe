@@ -318,6 +318,7 @@ const WordsAdmin = () => {
             meaning: d.row.meaning,
             options: d.row.options,
             difficulty: d.row.difficulty,
+            stage: d.row.stage,
             category: d.row.category,
             enabled: d.row.enabled,
           })
