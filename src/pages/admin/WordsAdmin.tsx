@@ -386,7 +386,12 @@ const WordsAdmin = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">词汇库管理</h1>
-          <p className="text-slate-400 mt-1">共 {words.length} 个词条 · 启用 {words.filter(w => w.enabled).length}</p>
+          <p className="text-slate-400 mt-1">
+            共 {words.length} · 启用 {words.filter(w => w.enabled).length}
+            <span className="ml-3 text-xs">
+              小学 {stageCounts.primary} · 初中 {stageCounts.junior} · 高中 {stageCounts.senior} · 未分级 {stageCounts.none}
+            </span>
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={openNew} className="bg-amber-500 hover:bg-amber-600 text-slate-900">
