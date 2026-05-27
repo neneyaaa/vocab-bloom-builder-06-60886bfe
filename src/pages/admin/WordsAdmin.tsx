@@ -353,6 +353,7 @@ const WordsAdmin = () => {
               meaning: snap.meaning,
               options: snap.options,
               difficulty: snap.difficulty,
+              stage: snap.stage,
               category: snap.category,
               enabled: snap.enabled,
             })
