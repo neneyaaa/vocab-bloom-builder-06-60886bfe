@@ -22,11 +22,15 @@ import { clearWordsCache } from "@/data/wordBank";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+type Stage = "primary" | "junior" | "senior";
+const STAGE_LABEL: Record<Stage, string> = { primary: "小学", junior: "初中", senior: "高中" };
+
 type ImportRow = {
   word: string;
   meaning: string;
   options: string[];
   difficulty: "easy" | "medium" | "hard";
+  stage: Stage | null;
   category: string | null;
   enabled: boolean;
 };
@@ -44,6 +48,7 @@ interface WordRow {
   meaning: string;
   options: string[];
   difficulty: "easy" | "medium" | "hard";
+  stage: Stage | null;
   category: string | null;
   enabled: boolean;
   created_at: string;
@@ -52,6 +57,7 @@ interface WordRow {
 const emptyForm = {
   word: "", meaning: "", options: ["", "", "", ""],
   difficulty: "medium" as "easy" | "medium" | "hard",
+  stage: "" as "" | Stage,
   category: "",
   enabled: true,
 };
