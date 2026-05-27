@@ -539,7 +539,19 @@ const WordsAdmin = () => {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>学段</Label>
+                <Select value={form.stage || "none"} onValueChange={(v) => setForm({ ...form, stage: (v === "none" ? "" : v) as "" | Stage })}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">未分级</SelectItem>
+                    <SelectItem value="primary">小学</SelectItem>
+                    <SelectItem value="junior">初中</SelectItem>
+                    <SelectItem value="senior">高中</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>难度</Label>
                 <Select value={form.difficulty} onValueChange={(v: any) => setForm({ ...form, difficulty: v })}>
@@ -553,7 +565,7 @@ const WordsAdmin = () => {
               </div>
               <div>
                 <Label>分类</Label>
-                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="bg-slate-800 border-slate-700" placeholder="可选，如 商务/学术" />
+                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="bg-slate-800 border-slate-700" placeholder="可选" />
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm">
