@@ -187,9 +187,16 @@ const Test = () => {
       <div className="px-6 max-w-3xl mx-auto w-full">
         <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
           <span>第 {currentIndex + 1} / {questions.length} 题</span>
-          <span className="capitalize px-2 py-0.5 rounded-full text-xs bg-secondary">
-            {currentWord.difficulty === 'easy' ? '基础' : currentWord.difficulty === 'medium' ? '进阶' : '高级'}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {stage && stage !== "mixed" && (
+              <span className="px-2 py-0.5 rounded-full text-xs bg-primary/10 text-primary">
+                {STAGE_LABELS[stage]}
+              </span>
+            )}
+            <span className="capitalize px-2 py-0.5 rounded-full text-xs bg-secondary">
+              {currentWord.difficulty === 'easy' ? '基础' : currentWord.difficulty === 'medium' ? '进阶' : '高级'}
+            </span>
+          </div>
         </div>
         <Progress value={progress} className="h-2" />
       </div>
