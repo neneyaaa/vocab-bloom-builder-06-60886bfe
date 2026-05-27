@@ -267,6 +267,7 @@ Deno.serve(async (req) => {
         meaning: String(w.meaning).trim(),
         options: w.options.map((o: any) => String(o).trim()),
         difficulty,
+        stage,
         category: topic,
         created_by: callerId,
         enabled: true,
