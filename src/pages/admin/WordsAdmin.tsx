@@ -67,6 +67,7 @@ const WordsAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDiff, setFilterDiff] = useState<string>("all");
+  const [filterStage, setFilterStage] = useState<string>("all");
   const [editing, setEditing] = useState<WordRow | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -74,6 +75,7 @@ const WordsAdmin = () => {
   const [aiTopic, setAiTopic] = useState("");
   const [aiCount, setAiCount] = useState(10);
   const [aiDiff, setAiDiff] = useState("medium");
+  const [aiStage, setAiStage] = useState<"" | Stage>("");
   const [aiLoading, setAiLoading] = useState(false);
 
   // Import flow state
