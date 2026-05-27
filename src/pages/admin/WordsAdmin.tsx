@@ -176,7 +176,13 @@ const WordsAdmin = () => {
     setAiLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-api", {
-        body: { action: "ai_generate_words", topic: aiTopic, count: aiCount, difficulty: aiDiff },
+        body: {
+          action: "ai_generate_words",
+          topic: aiTopic,
+          count: aiCount,
+          difficulty: aiDiff,
+          stage: aiStage || null,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
