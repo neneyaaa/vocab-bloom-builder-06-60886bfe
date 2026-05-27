@@ -1,17 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, ArrowLeft, Clock } from "lucide-react";
+import { BookOpen, ArrowLeft, Clock, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Word, getRandomQuestions } from "@/data/wordBank";
+import { Card } from "@/components/ui/card";
+import { Word, getRandomQuestions, Stage, STAGE_LABELS } from "@/data/wordBank";
 import { AnswerRecord, evaluateAnswer, calculateResult, saveResult, saveResultToCloud } from "@/lib/testService";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const TOTAL_QUESTIONS = 20;
+type StageChoice = Stage | "mixed";
 
 const Test = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [stage, setStage] = useState<StageChoice | null>(null);
+  const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
@@ -20,16 +25,30 @@ const Test = () => {
   const startTime = useRef(Date.now());
   const [elapsed, setElapsed] = useState(0);
 
-  useEffect(() => {
-    getRandomQuestions(TOTAL_QUESTIONS).then(setQuestions);
-  }, []);
+  const beginTest = async (s: StageChoice) => {
+    setLoading(true);
+    const qs = await getRandomQuestions(TOTAL_QUESTIONS, s === "mixed" ? null : s);
+    setLoading(false);
+    if (qs.length === 0) {
+      toast.error(s === "mixed" ? "词库为空" : `${STAGE_LABELS[s]}词库暂无词条，请联系管理员补充`);
+      return;
+    }
+    if (qs.length < TOTAL_QUESTIONS) {
+      toast.message(`该学段仅有 ${qs.length} 个词条，将使用全部进行测评`);
+    }
+    setStage(s);
+    setQuestions(qs);
+    startTime.current = Date.now();
+    setElapsed(0);
+  };
 
   useEffect(() => {
+    if (!stage) return;
     const timer = setInterval(() => {
       setElapsed(Math.floor((Date.now() - startTime.current) / 1000));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [stage]);
 
   const currentWord = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex) / questions.length) * 100 : 0;
