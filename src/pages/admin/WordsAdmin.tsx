@@ -22,11 +22,15 @@ import { clearWordsCache } from "@/data/wordBank";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+type Stage = "primary" | "junior" | "senior";
+const STAGE_LABEL: Record<Stage, string> = { primary: "小学", junior: "初中", senior: "高中" };
+
 type ImportRow = {
   word: string;
   meaning: string;
   options: string[];
   difficulty: "easy" | "medium" | "hard";
+  stage: Stage | null;
   category: string | null;
   enabled: boolean;
 };
@@ -44,6 +48,7 @@ interface WordRow {
   meaning: string;
   options: string[];
   difficulty: "easy" | "medium" | "hard";
+  stage: Stage | null;
   category: string | null;
   enabled: boolean;
   created_at: string;
@@ -52,6 +57,7 @@ interface WordRow {
 const emptyForm = {
   word: "", meaning: "", options: ["", "", "", ""],
   difficulty: "medium" as "easy" | "medium" | "hard",
+  stage: "" as "" | Stage,
   category: "",
   enabled: true,
 };
@@ -61,6 +67,7 @@ const WordsAdmin = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDiff, setFilterDiff] = useState<string>("all");
+  const [filterStage, setFilterStage] = useState<string>("all");
   const [editing, setEditing] = useState<WordRow | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -68,6 +75,7 @@ const WordsAdmin = () => {
   const [aiTopic, setAiTopic] = useState("");
   const [aiCount, setAiCount] = useState(10);
   const [aiDiff, setAiDiff] = useState("medium");
+  const [aiStage, setAiStage] = useState<"" | Stage>("");
   const [aiLoading, setAiLoading] = useState(false);
 
   // Import flow state
@@ -91,10 +99,20 @@ const WordsAdmin = () => {
 
   const filtered = words.filter((w) => {
     if (filterDiff !== "all" && w.difficulty !== filterDiff) return false;
+    if (filterStage !== "all") {
+      if (filterStage === "none" ? w.stage != null : w.stage !== filterStage) return false;
+    }
     if (search && !w.word.toLowerCase().includes(search.toLowerCase()) &&
         !w.meaning.includes(search)) return false;
     return true;
   });
+
+  const stageCounts = {
+    primary: words.filter((w) => w.stage === "primary").length,
+    junior: words.filter((w) => w.stage === "junior").length,
+    senior: words.filter((w) => w.stage === "senior").length,
+    none: words.filter((w) => !w.stage).length,
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -105,7 +123,8 @@ const WordsAdmin = () => {
     setEditing(w);
     setForm({
       word: w.word, meaning: w.meaning, options: [...w.options],
-      difficulty: w.difficulty, category: w.category ?? "", enabled: w.enabled,
+      difficulty: w.difficulty, stage: (w.stage ?? "") as "" | Stage,
+      category: w.category ?? "", enabled: w.enabled,
     });
     setFormOpen(true);
   };
@@ -121,6 +140,7 @@ const WordsAdmin = () => {
       meaning: form.meaning.trim(),
       options: form.options.map((o) => o.trim()),
       difficulty: form.difficulty,
+      stage: form.stage || null,
       category: form.category.trim() || null,
       enabled: form.enabled,
     };
@@ -156,7 +176,13 @@ const WordsAdmin = () => {
     setAiLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("admin-api", {
-        body: { action: "ai_generate_words", topic: aiTopic, count: aiCount, difficulty: aiDiff },
+        body: {
+          action: "ai_generate_words",
+          topic: aiTopic,
+          count: aiCount,
+          difficulty: aiDiff,
+          stage: aiStage || null,
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -192,9 +218,10 @@ const WordsAdmin = () => {
     if (new Set(options).size !== 4) return { ok: false, reason: "选项重复" };
     if (!options.includes(meaning)) return { ok: false, reason: "选项中不含正确释义" };
     const difficulty = ["easy", "medium", "hard"].includes(raw.difficulty) ? raw.difficulty : "medium";
+    const stage = (["primary", "junior", "senior"].includes(raw.stage) ? raw.stage : null) as Stage | null;
     const category = raw.category == null ? null : String(raw.category).trim() || null;
     const enabled = raw.enabled !== false;
-    return { ok: true, row: { word, meaning, options, difficulty, category, enabled } };
+    return { ok: true, row: { word, meaning, options, difficulty, stage, category, enabled } };
   };
 
   const importJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -297,6 +324,7 @@ const WordsAdmin = () => {
             meaning: d.row.meaning,
             options: d.row.options,
             difficulty: d.row.difficulty,
+            stage: d.row.stage,
             category: d.row.category,
             enabled: d.row.enabled,
           })
@@ -331,6 +359,7 @@ const WordsAdmin = () => {
               meaning: snap.meaning,
               options: snap.options,
               difficulty: snap.difficulty,
+              stage: snap.stage,
               category: snap.category,
               enabled: snap.enabled,
             })
@@ -357,7 +386,12 @@ const WordsAdmin = () => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">词汇库管理</h1>
-          <p className="text-slate-400 mt-1">共 {words.length} 个词条 · 启用 {words.filter(w => w.enabled).length}</p>
+          <p className="text-slate-400 mt-1">
+            共 {words.length} · 启用 {words.filter(w => w.enabled).length}
+            <span className="ml-3 text-xs">
+              小学 {stageCounts.primary} · 初中 {stageCounts.junior} · 高中 {stageCounts.senior} · 未分级 {stageCounts.none}
+            </span>
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={openNew} className="bg-amber-500 hover:bg-amber-600 text-slate-900">
@@ -389,8 +423,18 @@ const WordsAdmin = () => {
               className="pl-9 bg-slate-800 border-slate-700"
             />
           </div>
+          <Select value={filterStage} onValueChange={setFilterStage}>
+            <SelectTrigger className="w-36 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部学段</SelectItem>
+              <SelectItem value="primary">小学</SelectItem>
+              <SelectItem value="junior">初中</SelectItem>
+              <SelectItem value="senior">高中</SelectItem>
+              <SelectItem value="none">未分级</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={filterDiff} onValueChange={setFilterDiff}>
-            <SelectTrigger className="w-40 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部难度</SelectItem>
               <SelectItem value="easy">简单</SelectItem>
@@ -411,6 +455,7 @@ const WordsAdmin = () => {
                 <tr>
                   <th className="text-left px-4 py-2.5">单词</th>
                   <th className="text-left px-4 py-2.5">释义</th>
+                  <th className="text-left px-4 py-2.5">学段</th>
                   <th className="text-left px-4 py-2.5">难度</th>
                   <th className="text-left px-4 py-2.5">分类</th>
                   <th className="text-left px-4 py-2.5">状态</th>
@@ -422,6 +467,13 @@ const WordsAdmin = () => {
                   <tr key={w.id} className="border-t border-slate-800 hover:bg-slate-800/30">
                     <td className="px-4 py-2.5 font-mono font-semibold">{w.word}</td>
                     <td className="px-4 py-2.5 text-slate-300">{w.meaning}</td>
+                    <td className="px-4 py-2.5">
+                      {w.stage ? (
+                        <Badge className="bg-sky-500/20 text-sky-300">{STAGE_LABEL[w.stage]}</Badge>
+                      ) : (
+                        <span className="text-slate-600 text-xs">-</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5">
                       <Badge className={diffColor(w.difficulty)}>{w.difficulty}</Badge>
                     </td>
@@ -445,7 +497,7 @@ const WordsAdmin = () => {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={6} className="text-center text-slate-500 py-8">暂无匹配记录</td></tr>
+                  <tr><td colSpan={7} className="text-center text-slate-500 py-8">暂无匹配记录</td></tr>
                 )}
               </tbody>
             </table>
@@ -487,7 +539,19 @@ const WordsAdmin = () => {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label>学段</Label>
+                <Select value={form.stage || "none"} onValueChange={(v) => setForm({ ...form, stage: (v === "none" ? "" : v) as "" | Stage })}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">未分级</SelectItem>
+                    <SelectItem value="primary">小学</SelectItem>
+                    <SelectItem value="junior">初中</SelectItem>
+                    <SelectItem value="senior">高中</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label>难度</Label>
                 <Select value={form.difficulty} onValueChange={(v: any) => setForm({ ...form, difficulty: v })}>
@@ -501,7 +565,7 @@ const WordsAdmin = () => {
               </div>
               <div>
                 <Label>分类</Label>
-                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="bg-slate-800 border-slate-700" placeholder="可选，如 商务/学术" />
+                <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="bg-slate-800 border-slate-700" placeholder="可选" />
               </div>
             </div>
             <label className="flex items-center gap-2 text-sm">
@@ -527,10 +591,22 @@ const WordsAdmin = () => {
               <Label>主题 / 场景</Label>
               <Input value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} placeholder="例如：商务英语、雅思学术、计算机科学..." className="bg-slate-800 border-slate-700" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label>数量 (1–30)</Label>
                 <Input type="number" min={1} max={30} value={aiCount} onChange={(e) => setAiCount(Number(e.target.value))} className="bg-slate-800 border-slate-700" />
+              </div>
+              <div>
+                <Label>学段</Label>
+                <Select value={aiStage || "none"} onValueChange={(v) => setAiStage((v === "none" ? "" : v) as "" | Stage)}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">不限</SelectItem>
+                    <SelectItem value="primary">小学</SelectItem>
+                    <SelectItem value="junior">初中</SelectItem>
+                    <SelectItem value="senior">高中</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>难度</Label>
@@ -544,7 +620,9 @@ const WordsAdmin = () => {
                 </Select>
               </div>
             </div>
-            <p className="text-xs text-slate-500">由 Lovable AI（Gemini）即时生成，并自动入库。</p>
+            <p className="text-xs text-slate-500">
+              选择学段后，AI 会按照该学段的课标高频词汇生成，并自动写入 stage 字段。
+            </p>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setAiOpen(false)}>取消</Button>

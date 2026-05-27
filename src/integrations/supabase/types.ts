@@ -546,6 +546,7 @@ export type Database = {
           id: string
           meaning: string
           options: Json
+          stage: string | null
           updated_at: string
           word: string
         }
@@ -558,6 +559,7 @@ export type Database = {
           id?: string
           meaning: string
           options: Json
+          stage?: string | null
           updated_at?: string
           word: string
         }
@@ -570,6 +572,7 @@ export type Database = {
           id?: string
           meaning?: string
           options?: Json
+          stage?: string | null
           updated_at?: string
           word?: string
         }

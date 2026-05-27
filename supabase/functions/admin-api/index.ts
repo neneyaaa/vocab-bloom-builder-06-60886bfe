@@ -182,11 +182,16 @@ Deno.serve(async (req) => {
       const topic = String(body.topic ?? "").trim();
       const count = Math.min(Math.max(Number(body.count ?? 10), 1), 30);
       const difficulty = (body.difficulty ?? "medium") as string;
+      const stage = (["primary", "junior", "senior"].includes(body.stage) ? body.stage : null) as
+        | "primary" | "junior" | "senior" | null;
       if (!topic) return json({ error: "请输入主题" }, 400);
 
+      const stageHint = stage
+        ? `\n学段: ${stage} (${stage === "primary" ? "中国小学" : stage === "junior" ? "中国初中(中考)" : "中国高中(高考)"}) — 必须严格属于该学段课标核心高频词`
+        : "";
       const sys =
-        "你是一位英语词汇出题专家。根据用户给定的主题，生成符合难度的英文单词及其4选1中文释义题。";
-      const userPrompt = `主题: ${topic}\n难度: ${difficulty} (easy=高中,medium=四级,hard=六级/雅思)\n数量: ${count}\n要求:\n1) 单词必须是真实英文单词，与主题相关\n2) options 必须包含正确释义和3个干扰项，干扰项要合理\n3) meaning 必须出现在 options 中`;
+        "你是一位英语词汇出题专家，熟悉中国小学/初中/高中各学段课标词汇。根据用户给定的学段与主题，生成符合学段难度的英文单词及其4选1中文释义题。";
+      const userPrompt = `主题: ${topic}${stageHint}\n难度: ${difficulty} (easy=基础,medium=中等,hard=高难)\n数量: ${count}\n要求:\n1) 单词必须是真实英文单词，与主题相关${stage ? "，且必须属于指定学段的核心高频词" : ""}\n2) options 必须包含正确释义和3个干扰项，干扰项要合理\n3) meaning 必须出现在 options 中`;
 
       const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -262,6 +267,7 @@ Deno.serve(async (req) => {
         meaning: String(w.meaning).trim(),
         options: w.options.map((o: any) => String(o).trim()),
         difficulty,
+        stage,
         category: topic,
         created_by: callerId,
         enabled: true,
