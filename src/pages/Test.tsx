@@ -105,6 +105,58 @@ const Test = () => {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  if (!stage) {
+    const stageCards: { key: StageChoice; title: string; desc: string }[] = [
+      { key: "primary", title: "小学", desc: "高频基础词，约 500–1500 词量" },
+      { key: "junior", title: "初中", desc: "中考核心词，约 1500–3000 词量" },
+      { key: "senior", title: "高中", desc: "高考核心词，约 3500–4500 词量" },
+      { key: "mixed", title: "全部混合", desc: "不限学段，混合抽题" },
+    ];
+    return (
+      <div className="min-h-screen flex flex-col">
+        <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto w-full">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-muted-foreground">
+            <ArrowLeft className="h-4 w-4 mr-1" />返回
+          </Button>
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            <span className="font-display font-bold text-foreground">词界</span>
+          </div>
+          <div className="w-12" />
+        </nav>
+        <main className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+          <div className="w-full max-w-2xl">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs mb-3">
+                <GraduationCap className="h-3.5 w-3.5" /> 选择学段
+              </div>
+              <h2 className="text-3xl font-display font-black text-foreground mb-2">请选择测评学段</h2>
+              <p className="text-sm text-muted-foreground">系统将根据学段从对应词库中抽取 {TOTAL_QUESTIONS} 道题</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {stageCards.map((s) => (
+                <button
+                  key={s.key}
+                  disabled={loading}
+                  onClick={() => beginTest(s.key)}
+                  className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-primary hover:bg-primary/5 transition-all disabled:opacity-50"
+                >
+                  <div className="font-display font-bold text-lg text-foreground mb-1">{s.title}</div>
+                  <div className="text-xs text-muted-foreground">{s.desc}</div>
+                </button>
+              ))}
+            </div>
+            {loading && (
+              <div className="flex items-center justify-center mt-6 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 抽题中...
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   if (!currentWord) {
     return (
       <div className="min-h-screen flex items-center justify-center">
