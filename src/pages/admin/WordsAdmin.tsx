@@ -423,8 +423,18 @@ const WordsAdmin = () => {
               className="pl-9 bg-slate-800 border-slate-700"
             />
           </div>
+          <Select value={filterStage} onValueChange={setFilterStage}>
+            <SelectTrigger className="w-36 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部学段</SelectItem>
+              <SelectItem value="primary">小学</SelectItem>
+              <SelectItem value="junior">初中</SelectItem>
+              <SelectItem value="senior">高中</SelectItem>
+              <SelectItem value="none">未分级</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={filterDiff} onValueChange={setFilterDiff}>
-            <SelectTrigger className="w-40 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-36 bg-slate-800 border-slate-700"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部难度</SelectItem>
               <SelectItem value="easy">简单</SelectItem>
