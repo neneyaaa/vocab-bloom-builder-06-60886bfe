@@ -99,10 +99,20 @@ const WordsAdmin = () => {
 
   const filtered = words.filter((w) => {
     if (filterDiff !== "all" && w.difficulty !== filterDiff) return false;
+    if (filterStage !== "all") {
+      if (filterStage === "none" ? w.stage != null : w.stage !== filterStage) return false;
+    }
     if (search && !w.word.toLowerCase().includes(search.toLowerCase()) &&
         !w.meaning.includes(search)) return false;
     return true;
   });
+
+  const stageCounts = {
+    primary: words.filter((w) => w.stage === "primary").length,
+    junior: words.filter((w) => w.stage === "junior").length,
+    senior: words.filter((w) => w.stage === "senior").length,
+    none: words.filter((w) => !w.stage).length,
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -113,7 +123,8 @@ const WordsAdmin = () => {
     setEditing(w);
     setForm({
       word: w.word, meaning: w.meaning, options: [...w.options],
-      difficulty: w.difficulty, category: w.category ?? "", enabled: w.enabled,
+      difficulty: w.difficulty, stage: (w.stage ?? "") as "" | Stage,
+      category: w.category ?? "", enabled: w.enabled,
     });
     setFormOpen(true);
   };
@@ -129,6 +140,7 @@ const WordsAdmin = () => {
       meaning: form.meaning.trim(),
       options: form.options.map((o) => o.trim()),
       difficulty: form.difficulty,
+      stage: form.stage || null,
       category: form.category.trim() || null,
       enabled: form.enabled,
     };
