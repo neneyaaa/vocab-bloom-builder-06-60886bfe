@@ -497,7 +497,7 @@ const WordsAdmin = () => {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={6} className="text-center text-slate-500 py-8">暂无匹配记录</td></tr>
+                  <tr><td colSpan={7} className="text-center text-slate-500 py-8">暂无匹配记录</td></tr>
                 )}
               </tbody>
             </table>
