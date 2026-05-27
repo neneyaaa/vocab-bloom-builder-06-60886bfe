@@ -212,9 +212,10 @@ const WordsAdmin = () => {
     if (new Set(options).size !== 4) return { ok: false, reason: "选项重复" };
     if (!options.includes(meaning)) return { ok: false, reason: "选项中不含正确释义" };
     const difficulty = ["easy", "medium", "hard"].includes(raw.difficulty) ? raw.difficulty : "medium";
+    const stage = (["primary", "junior", "senior"].includes(raw.stage) ? raw.stage : null) as Stage | null;
     const category = raw.category == null ? null : String(raw.category).trim() || null;
     const enabled = raw.enabled !== false;
-    return { ok: true, row: { word, meaning, options, difficulty, category, enabled } };
+    return { ok: true, row: { word, meaning, options, difficulty, stage, category, enabled } };
   };
 
   const importJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
