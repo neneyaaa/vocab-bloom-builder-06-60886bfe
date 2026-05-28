@@ -143,12 +143,15 @@ const Home = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50">
+const FeatureCard = ({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick?: () => void }) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50 hover:border-primary hover:bg-primary/5 transition-all text-left"
+  >
     {icon}
     <span className="font-display font-semibold text-sm text-foreground">{title}</span>
     <span className="text-xs text-muted-foreground">{desc}</span>
-  </div>
+  </button>
 );
 
 export default Home;
