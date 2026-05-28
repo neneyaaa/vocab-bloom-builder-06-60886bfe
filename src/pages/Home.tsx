@@ -105,9 +105,24 @@ const Home = () => {
 
           {/* Features */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-xl mx-auto">
-            <FeatureCard icon={<Brain className="h-5 w-5 text-primary" />} title="智能抽题" desc="多难度混合出题" />
-            <FeatureCard icon={<Swords className="h-5 w-5 text-accent" />} title="实时 PK" desc="与全球玩家对战" />
-            <FeatureCard icon={<TrendingUp className="h-5 w-5 text-success" />} title="排行竞速" desc="周/月榜单争锋" />
+            <FeatureCard
+              icon={<Brain className="h-5 w-5 text-primary" />}
+              title="智能抽题"
+              desc="按学段（小学/初中/高中）精准抽题"
+              onClick={() => navigate("/test")}
+            />
+            <FeatureCard
+              icon={<Swords className="h-5 w-5 text-accent" />}
+              title="实时 PK"
+              desc="与全球玩家对战"
+              onClick={() => navigate(user ? "/pk" : "/auth")}
+            />
+            <FeatureCard
+              icon={<TrendingUp className="h-5 w-5 text-success" />}
+              title="排行竞速"
+              desc="周/月榜单争锋"
+              onClick={() => navigate("/leaderboard")}
+            />
           </div>
         </div>
 
@@ -128,12 +143,15 @@ const Home = () => {
   );
 };
 
-const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) => (
-  <div className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50">
+const FeatureCard = ({ icon, title, desc, onClick }: { icon: React.ReactNode; title: string; desc: string; onClick?: () => void }) => (
+  <button
+    onClick={onClick}
+    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-card border border-border/50 hover:border-primary hover:bg-primary/5 transition-all text-left"
+  >
     {icon}
     <span className="font-display font-semibold text-sm text-foreground">{title}</span>
     <span className="text-xs text-muted-foreground">{desc}</span>
-  </div>
+  </button>
 );
 
 export default Home;
