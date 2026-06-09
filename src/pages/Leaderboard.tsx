@@ -27,48 +27,19 @@ const Leaderboard = () => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const since = new Date();
-      if (period === "week") since.setDate(since.getDate() - 7);
-      else since.setMonth(since.getMonth() - 1);
-
-      const { data: matches, error } = await supabase
-        .from("match_results")
-        .select("user_id, score, result")
-        .gte("created_at", since.toISOString())
-        .limit(1000);
-
-      if (error || !matches) { setRows([]); setLoading(false); return; }
-
-      // Aggregate
-      const map = new Map<string, { wins: number; total: number; score_sum: number }>();
-      for (const m of matches) {
-        const cur = map.get(m.user_id) ?? { wins: 0, total: 0, score_sum: 0 };
-        cur.total += 1;
-        cur.score_sum += m.score;
-        if (m.result === "win") cur.wins += 1;
-        map.set(m.user_id, cur);
-      }
-
-      const userIds = Array.from(map.keys());
-      if (userIds.length === 0) { setRows([]); setLoading(false); return; }
-
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .in("id", userIds);
-
-      const merged: RankRow[] = userIds.map((id) => {
-        const p = profiles?.find((pr) => pr.id === id);
-        const stats = map.get(id)!;
-        return {
-          user_id: id,
-          username: p?.username ?? "未知用户",
-          avatar_url: p?.avatar_url ?? null,
-          ...stats,
-        };
-      }).sort((a, b) => b.wins - a.wins || b.score_sum - a.score_sum);
-
-      if (!cancelled) { setRows(merged); setLoading(false); }
+      const { data, error } = await supabase.rpc("get_leaderboard", { period });
+      if (cancelled) return;
+      if (error || !data) { setRows([]); setLoading(false); return; }
+      const merged: RankRow[] = (data as any[]).map((r) => ({
+        user_id: r.user_id,
+        username: r.username ?? "未知用户",
+        avatar_url: r.avatar_url ?? null,
+        wins: Number(r.wins),
+        total: Number(r.total),
+        score_sum: Number(r.score_sum),
+      }));
+      setRows(merged);
+      setLoading(false);
     };
     load();
     return () => { cancelled = true; };
